@@ -90,13 +90,13 @@ style history_name:
 
 style history_name_text:
     font "gui/font/m1.ttf"
-    size 30
+    size 31
     min_width gui.history_name_width
     text_align gui.history_name_xalign
 
 style history_text:
     font "gui/font/m1.ttf"
-    size 30
+    size 31
     xpos gui.history_text_xpos + 3
     ypos gui.history_text_ypos - 5
     xanchor gui.history_text_xalign
