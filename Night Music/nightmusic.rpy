@@ -23,15 +23,18 @@ init 5 python:
                 "not mas_isMorning() "
                 "and not persistent.current_track"
             ),
-            action=EV_ACT_QUEUE
+            action=EV_ACT_QUEUE,
+            rules={"skip alert": None}
         )
     )
 
 
 label monika_welcome_home:
-
     #Sanity check this since for whatever reason this conditional runs anyway.
     if not mas_isMorning() or persistent.current_track:
+        #Set up the notif
+        call display_notif(m_name,"Hey [player]...","Topic Alerts")
+
         #Set up a docking station and get a list of ogg files
         python:
             nightMusicStation = store.MASDockingStation(renpy.config.basedir+"/nightmusic/")
@@ -45,7 +48,7 @@ label monika_welcome_home:
             return
 
         m 1eka "Hey [player]..."
-        m 3eka "Now that we're home together, I'm going to put on a song for us to relax to.{w=0.5}.{w=0.5}."
+        m 3eka "Now that we're home together, I'm going to put on a song for us to relax to.{w=0.5}.{w=0.5}.{nw}"
 
         $ play_song(song, fadein=3.0)
 
