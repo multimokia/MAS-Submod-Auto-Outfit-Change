@@ -9,7 +9,7 @@ init 5 python:
             conditional=(
                 "mas_isMorning() "
                 "and monika_chr.hair == store.mas_hair_down "
-                "and (monika_chr.clothes != store.mas_clothes_marisa or monika_chr.clothes != store.mas_clothes_rin) "
+                "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             ),
             action=EV_ACT_QUEUE,
@@ -44,7 +44,7 @@ label monika_sethair_ponytail:
         hairup_ev.conditional=(
                 "mas_isMorning() "
                 "and monika_chr.hair == store.mas_hair_down "
-                "and (monika_chr.clothes != store.mas_clothes_marisa or monika_chr.clothes != store.mas_clothes_rin) "
+                "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             )
         hairup_ev.action = EV_ACT_QUEUE
@@ -59,7 +59,7 @@ init 5 python:
             conditional=(
                 "not mas_isMorning() "
                 "and monika_chr.hair == store.mas_hair_def "
-                "and (monika_chr.clothes != store.mas_clothes_marisa or monika_chr.clothes != store.mas_clothes_rin) "
+                "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             ),
             action=EV_ACT_QUEUE,
@@ -98,7 +98,7 @@ label monika_sethair_down:
         hairdown_ev.conditional=(
                 "not mas_isMorning() "
                 "and monika_chr.hair == store.mas_hair_def "
-                "and (monika_chr.clothes != store.mas_clothes_marisa or monika_chr.clothes != store.mas_clothes_rin) "
+                "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             )
         hairdown_ev.action = EV_ACT_QUEUE
