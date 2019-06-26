@@ -19,7 +19,7 @@ init 5 python:
     )
 
 label monika_sethair_ponytail:
-    if store.mas_globals.in_idle_mode or not mas_isFocused():
+    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 3eua "I'm going to get ready for today.{w=0.5}.{w=0.5}.{w=2}{nw}"
 
     else:
@@ -28,8 +28,9 @@ label monika_sethair_ponytail:
 
     # this should auto lock/unlock stuff
     $ monika_chr.change_hair(mas_hair_def,by_user=False)
+    $ monika_chr.wear_acs(mas_acs_ribbon_def)
 
-    if store.mas_globals.in_idle_mode or not mas_isFocused():
+    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 3hub "All done!{w=1}{nw}"
 
     else:
@@ -68,14 +69,14 @@ init 5 python:
     )
 
 label monika_sethair_down:
-    if store.mas_globals.in_idle_mode or not mas_isFocused():
+    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 2dsa "I'm just going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{w=2}{nw}"
     else:
         m 2dsa "Give me a moment [player], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
 
     $ monika_chr.change_hair(mas_hair_down,by_user=False)
 
-    if store.mas_globals.in_idle_mode and not mas_isFocused():
+    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m "That feels better.{w=1}{nw}"
 
     else:
