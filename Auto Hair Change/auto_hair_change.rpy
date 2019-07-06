@@ -152,8 +152,11 @@ label bye_going_somewhere_iowait_override:
 
     elif promise.done():
         # i/o thread is done!
+
+        #Make sure hair is up for when we leave
         $ monika_chr.change_hair(mas_hair_def, by_user=False)
 
+        #We'll wear a ribbon if it's a special day
         if mas_isSpecialDay():
             $ monika_chr.wear_acs(mas_acs_ribbon_def)
         jump bye_going_somewhere_rtg
