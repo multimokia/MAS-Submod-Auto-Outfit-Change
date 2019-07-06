@@ -32,7 +32,6 @@ label monika_sethair_ponytail:
 
     # this should auto lock/unlock stuff
     $ monika_chr.change_hair(mas_hair_def,by_user=False)
-    $ monika_chr.wear_acs(mas_acs_ribbon_def)
 
     if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 3hub "All done!{w=1}{nw}"
