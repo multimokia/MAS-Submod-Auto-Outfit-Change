@@ -33,7 +33,7 @@ label monika_welcome_home:
     #Sanity check this since for whatever reason this conditional runs anyway.
     if not mas_isMorning() or persistent.current_track:
         #Set up the notif
-        call display_notif(m_name,"Hey [player]...","Topic Alerts")
+        $ display_notif(m_name,["Hey [player]..."],"Topic Alerts")
 
         #Set up a docking station and get a list of ogg files
         python:
