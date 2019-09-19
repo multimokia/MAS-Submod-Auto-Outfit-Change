@@ -5,6 +5,13 @@ init 999 python:
     #Override this label so we always end up here when taking Monika somewhere
     config.label_overrides["bye_going_somewhere_post_aff_check"] = "bye_going_somewhere_post_aff_check_override"
 
+    def ahc_getDayHair():
+        """
+        Returns a list of all MASHair objects (that are unlocked) that's not down hair
+        """
+        return [hair.get_sprobj() for hair in mas_selspr.filter_hair(True) if hair.name != "down"]
+
+
 init 5 python:
     addEvent(
         Event(
@@ -12,7 +19,7 @@ init 5 python:
             eventlabel="monika_sethair_ponytail",
             conditional=(
                 "mas_isMorning() "
-                "and monika_chr.hair != store.mas_hair_def "
+                "and monika_chr.hair == store.mas_hair_down "
                 "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             ),
@@ -31,7 +38,7 @@ label monika_sethair_ponytail:
         m 2dsa "I'm just getting myself ready for the day.{w=0.5}.{w=0.5}.{nw}"
 
     # this should auto lock/unlock stuff
-    $ monika_chr.change_hair(mas_hair_def,by_user=False)
+    $ monika_chr.change_hair(renpy.random.choice(ahc_getDayHair()),by_user=False)
 
     if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 3hub "All done!{w=1}{nw}"
@@ -46,7 +53,7 @@ label monika_sethair_ponytail:
 
         hairup_ev.conditional=(
                 "mas_isMorning() "
-                "and monika_chr.hair != store.mas_hair_def "
+                "and monika_chr.hair == store.mas_hair_down "
                 "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             )
@@ -152,8 +159,9 @@ label bye_going_somewhere_iowait_override:
     elif promise.done():
         # i/o thread is done!
 
-        #Make sure hair is up for when we leave
-        $ monika_chr.change_hair(mas_hair_def, by_user=False)
+        #Make hair is either what player asked, or Moni's choice
+        if not persistent._mas_force_hair:
+            $ monika_chr.change_hair(renpy.random.choice(ahc_getDayHair()), by_user=False)
 
         #We'll wear a ribbon if it's a special day
         if mas_isSpecialDay():
