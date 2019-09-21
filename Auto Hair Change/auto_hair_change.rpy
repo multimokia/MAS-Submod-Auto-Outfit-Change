@@ -118,14 +118,6 @@ label monika_sethair_down:
 #NOTE: We only override the post_aff_check because it falls through to the rest rather than jumps/calls
 label bye_going_somewhere_post_aff_check_override:
 
-    # event based
-    if mas_isMonikaBirthday():
-        m 1hua "Ehehe. It's a bit romantic, isn't it?"
-        m 1eua "Maybe you'd even want to call it a da-{nw}"
-        $ _history_list.pop()
-        $ _history_list.pop()
-        m 1hua "Oh! Sorry, did I say something?"
-
     if mas_isO31():
         m 1wub "Oh! Are we going trick or treating, [player]?{nw}"
         $ _history_list.pop()
@@ -160,13 +152,17 @@ label bye_going_somewhere_iowait_override:
         # i/o thread is done!
 
         #Make hair is either what player asked, or Moni's choice
-        if not persistent._mas_force_hair:
+        if not persistent._mas_force_hair and monika_chr.hair == mas_hair_down:
             $ monika_chr.change_hair(renpy.random.choice(ahc_getDayHair()), by_user=False)
 
         #We'll wear a ribbon if it's a special day
         if mas_isSpecialDay():
-            $ monika_chr.wear_acs(mas_acs_ribbon_def)
+            if 'ribbon_black' in store.mas_selspr.ACS_SEL_MAP and store.mas_selspr.ACS_SEL_MAP['ribbon_black'].unlocked:
+                $ monika_chr.wear_acs(mas_acs_ribbon_black)
+            else:
+                $ monika_chr.wear_acs(mas_acs_ribbon_def)
         jump bye_going_somewhere_rtg
+
     else:
         #clean up the history list so only one "give me a second..." should show up
         $ _history_list.pop()

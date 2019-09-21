@@ -1,5 +1,10 @@
 # Changelog
 
+## September 20th, 2019:
+- Taking you somewhere farewell fix
+- Added ribbon preference for special days
+- Monika now only gets her hair ready when taking her out if it wasn't already, and you didn't ask for a specific style
+
 ## September 19th, 2019:
 - Added new method `ahc_getDayHair()`
 - Added spritepack support
