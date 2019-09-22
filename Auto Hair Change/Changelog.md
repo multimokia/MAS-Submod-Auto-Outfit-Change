@@ -1,4 +1,6 @@
 # Changelog
+## September 22nd, 2019:
+- Added another label override
 
 ## September 20th, 2019:
 - Taking you somewhere farewell fix

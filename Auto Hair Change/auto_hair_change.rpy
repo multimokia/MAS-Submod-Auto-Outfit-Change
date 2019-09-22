@@ -4,6 +4,7 @@ init 999 python:
 
     #Override this label so we always end up here when taking Monika somewhere
     config.label_overrides["bye_going_somewhere_post_aff_check"] = "bye_going_somewhere_post_aff_check_override"
+    config.label_overrides["bye_going_somewhere_iostart"] = "bye_going_somewhere_iostart_override"
 
     def ahc_getDayHair():
         """
