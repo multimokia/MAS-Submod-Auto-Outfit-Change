@@ -9,7 +9,7 @@ init 1 python:
         """
 
         # If the key and the location are valid we use the weather from the api
-        if store.awc_canGetAPIWeath():
+        if store.awc_canGetAPIWeath() and awc_testConnection():
             return store.awc_weathFromAPI()
 
         else:
@@ -81,7 +81,6 @@ init 1 python:
 
 
 init -19 python in mas_weather:
-
     import random
     import datetime
     import store
@@ -93,60 +92,14 @@ init -19 python in mas_weather:
         RETURNS:
             - True or false on whether or not to call spaceroom
         """
+        #First, see if we have a value to get
+        ret_val = store.await_weatherProgress.get()
 
-        #If the player forced weather or we're not in a background that supports weather, we do nothing
-        if force_weather or store.mas_current_background.disable_progressive:
-            return False
+        #If ret val is none, then we're either not running, or not done
+        #In the latter case, a new thread won't start until this finishes
+        if ret_val is None:
+            store.await_weatherProgress.start()
 
-        #Otherwise we do stuff
-        global weather_change_time
-        global should_scene_change
-
-        if store.awc_canGetAPIWeath():
-            new_weather = store.awc_weathFromAPI()
-
-            #Do we need to change weather?
-            if new_weather != store.mas_current_weather:
-                #Let's see if we need to scene change
-                should_scene_change = store.mas_current_background.isChangingRoom(store.mas_current_weather, new_weather)
-
-                #Now we change weather
-                store.mas_changeWeather(new_weather)
-
-                #Play the rumble in the back to indicate thunder
-                if new_weather == store.mas_weather_thunder:
-                    renpy.play("mod_assets/sounds/amb/thunder_1.wav",channel="backsound")
-                return True
-
+        #We have a value, let's return it
         else:
-            #Set a time for startup
-            if not weather_change_time:
-                weather_change_time = datetime.datetime.now() + datetime.timedelta(0,random.randint(1800,5400))
-
-            elif weather_change_time < datetime.datetime.now():
-                #Need to set a new check time
-                weather_change_time = datetime.datetime.now() + datetime.timedelta(0,random.randint(1800,5400))
-
-                #Change weather
-                new_weather = store.mas_shouldRain()
-
-                if new_weather is not None and new_weather != store.mas_current_weather:
-                    #Let's see if we need to scene change
-                    should_scene_change = store.mas_current_background.isChangingRoom(store.mas_current_weather, new_weather)
-    
-                    #Now we change weather
-                    store.mas_changeWeather(new_weather)
-    
-                    #Play the rumble in the back to indicate thunder
-                    if new_weather == store.mas_weather_thunder:
-                        renpy.play("mod_assets/sounds/amb/thunder_1.wav",channel="backsound")
-                    return True
-    
-                elif store.mas_current_weather != store.mas_weather_def:
-                    #Let's see if we need to scene change
-                    should_scene_change = store.mas_current_background.isChangingRoom(store.mas_current_weather, store.mas_weather_def)
-    
-                    store.mas_changeWeather(store.mas_weather_def)
-                    return True
-
-        return False
+            return ret_val

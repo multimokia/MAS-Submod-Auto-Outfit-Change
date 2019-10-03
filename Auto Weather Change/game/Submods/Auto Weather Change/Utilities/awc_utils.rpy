@@ -1,22 +1,23 @@
-#Loc dict
-default persistent._awc_player_location = {
-    "city": None,
-    "country": None,
-    "lat": None,
-    "lon": None,
-    "loc_pref": None
-}
-
 default persistent._awc_API_key = None
 
 init -18 python:
     #Initialize the lookup
     awc_buildCityLookupDict()
 
+    #Create our async wrapper for weather progress
+    await_weatherProgress = store.mas_threading.MASAsyncWrapper(
+        store.awc_weatherProgress
+    )
+
 init -200 python in awc_globals:
     #Store base url in a global store
     BASE_URL = "http://api.openweathermap.org/data/2.5/weather?"
 
+    #Stores the time at which it should check whether weather should change
+    weather_check_time = None
+
+    #Stores the time when we go back to normal progressive weather if no connection
+    weather_offline_timeout = None
 
 # Api key setup
 init -21 python:
@@ -30,13 +31,26 @@ init -21 python:
             url - url to test
 
         OUT:
-            True if successful, error code if not
+            True if successful, error code if connected, but got error. False if no connection
         """
         try:
             urllib2.urlopen(url)
             return True
         except urllib2.HTTPError as e:
             return e.code
+        except urllib2.URLError:
+            return False
+
+    def awc_testConnection():
+        """
+        Checks if we have internet connection
+
+        OUT:
+            True if successful, False otherwise
+        """
+        if not awc_testURL("http://www.google.com"):
+            return False
+        return True
 
     def awc_isInvalidAPIKey(api_key):
         """
@@ -96,10 +110,24 @@ init -20 python in awc_globals:
     THUNDER_KW = ['storm', 'hurricane', 'tornado', 'thunderstorm']
     SNOW_KW = ['snow', 'sleet']
 
+#NOTE: We create this dict here so we can check for existence of player location at the right init
+#If player just installed a submod requiring something being done on load
+init -20 python:
+    if not store.persistent._awc_player_location:
+        store.persistent._awc_player_location = {
+            "city": None,
+            "country": None,
+            "lat": None,
+            "lon": None,
+            "loc_pref": None
+        }
 
 #Helper methods
 init -19 python:
     import store
+    import datetime
+    import time
+    import random
 
     def awc_isInvalidLocation(city_code, country_code=""):
         """
@@ -164,6 +192,59 @@ init -19 python:
         """
         return store.awc_utils.country_code_lookup.get(country_code, country_code)
 
+    def awc_getSunriseDT():
+        """
+        Gets the datetime.datetime of sunrise for player location
+
+        OUT:
+            datetime.datetime representing sunrise for player location (timezone calculated)
+
+        NOTE: Assumes we can get an observation
+        """
+        if time.localtime().tm_isdst:
+            return (
+                awc_getObservation().get_weather().get_sunrise_time('date')
+                - datetime.timedelta(seconds=time.timezone)
+                + datetime.timedelta(hours=1)
+            ).replace(tzinfo=None)
+
+        else:
+            return (
+                awc_getObservation().get_weather().get_sunrise_time('date') - datetime.timedelta(seconds=time.timezone)
+            ).replace(tzinfo=None)
+
+    def awc_getSunsetDT():
+        """
+        Gets the datetime.datetime of sunset for player location
+
+        OUT:
+            datetime.datetime representing sunset for player location (timezone calculated)
+
+        NOTE: Assumes we can get an observation
+        """
+        if time.localtime().tm_isdst:
+            return (
+                awc_getObservation().get_weather().get_sunset_time('date')
+                - datetime.timedelta(seconds=time.timezone)
+                + datetime.timedelta(hours=1)
+            ).replace(tzinfo=None)
+        else:
+            return (
+                awc_getObservation().get_weather().get_sunset_time('date') - datetime.timedelta(seconds=time.timezone)
+            ).replace(tzinfo=None)
+
+    def awc_dtToMASTime(dt):
+        """
+        Converts a datetime.datetime to MAS time (settings menu)
+
+        IN:
+            dt - datetime.datetime object of the time to convert to MAS time
+
+        OUT:
+            the time in MAS settings time.
+        """
+        return dt.minute + dt.hour * 60
+
     def awc_lookupCity(city_name):
         """
         Gets a list of all cities with city_name from the reference dict
@@ -215,7 +296,7 @@ init -19 python:
         if city_matches:
             for place in city_matches:
                 #Build the name
-                disp_text = city_name + ", " + place[3] + ". " + awc_getFriendlyCountry(place[0])
+                disp_text = city_name + ", " + place[3] + ", " + awc_getFriendlyCountry(place[0])
                 scrollable_list.append((
                     disp_text,
                     (place[1], place[2]),
@@ -392,6 +473,39 @@ init -19 python:
             and not awc_isInvalidAPIKey(store.persistent._awc_API_key)
         )
 
+    def awc_offlineTimerCheck():
+        """
+        Checks whether we should start or reset the offline timer and whether we timed out
+
+        OUT:
+            False if we have connection or if we have not timed out
+            True if we have timed out
+
+        NOTE: safe bet is to call this from a function called asynchronously
+        """
+        #If false then we have no connection
+        if not awc_testConnection():
+            _now = datetime.datetime.now()
+
+            #If false start the timer and return false to pass
+            if not store.awc_globals.weather_offline_timeout:
+                store.awc_globals.weather_offline_timeout = _now + datetime.timedelta(0,1800)
+                return False
+
+            #Else if the timer started and we have not timed out return false to pass
+            elif store.awc_globals.weather_offline_timeout and store.awc_globals.weather_offline_timeout > _now:
+                return False
+
+            #Else you shall not pass if we have timed out
+            else:
+                return True
+
+        else:
+            #Else we have connection and if the timer has started then reset it
+            if store.awc_globals.weather_offline_timeout:
+                store.awc_globals.weather_offline_timeout = None
+            return False
+
     def awc_getObservation():
         """
         Gets the weather observation by player coords (if we have) or city/country (if we have)
@@ -437,6 +551,9 @@ init -19 python:
 
         elif awc_isSnowWeather():
             return store.mas_weather_snow
+
+        else:
+            return store.mas_weather_def
 
     def awc_isSunWeather():
         """
@@ -527,3 +644,96 @@ init -19 python:
             weather_desc in store.awc_globals.SNOW_KW
             or detailed_weather_desc in store.awc_globals.SNOW_KW
         )
+
+    def awc_weatherProgress():
+        """
+        Asyncronous weather progress container.
+
+        NOTE: This should be called asyncronously
+
+        See weatherProgress for details.
+        """
+        #If the player forced weather or we're not in a background that supports weather, we do nothing
+        if store.mas_weather.force_weather or store.mas_current_background.disable_progressive:
+            return False
+
+        #Otherwise we do stuff
+
+        #Set a time for startup
+        if not store.awc_globals.weather_check_time:
+            store.awc_globals.weather_check_time = datetime.datetime.now() + datetime.timedelta(0,300)
+
+        elif store.awc_globals.weather_check_time < datetime.datetime.now():
+            #Need to set a new check time
+            store.awc_globals.weather_check_time = datetime.datetime.now() + datetime.timedelta(0,300)
+
+            if (
+                (awc_testConnection() and store.awc_canGetAPIWeath())
+                or (not awc_testConnection() and store.awc_canGetAPIWeath() and not awc_offlineTimerCheck())
+            ):
+                if awc_testConnection():
+                    #We have connection and a valid url. Get weath from api
+                    new_weather = store.awc_weathFromAPI()
+
+                    #Reset timeout if need be
+                    if store.awc_globals.weather_offline_timeout:
+                        store.awc_globals.weather_offline_timeout = None
+
+                else:
+                    #No connection, keep current weather
+                    new_weather = store.mas_current_weather
+                    return False
+
+                #Do we need to change weather?
+                if new_weather != store.mas_current_weather:
+                    #Let's see if we need to scene change
+                    store.mas_weather.should_scene_change = store.mas_current_background.isChangingRoom(
+                        store.mas_current_weather,
+                        new_weather
+                    )
+
+                    #Now we change weather
+                    store.mas_changeWeather(new_weather)
+
+                    #Play the rumble in the back to indicate thunder
+                    if new_weather == store.mas_weather_thunder:
+                        renpy.play("mod_assets/sounds/amb/thunder_1.wav",channel="backsound")
+                    return True
+
+            else:
+                #Set a time for startup
+                if not store.mas_weather.weather_change_time:
+                    store.mas_weather.weather_change_time = datetime.datetime.now() + datetime.timedelta(0,random.randint(1800,5400))
+
+                elif store.mas_weather.weather_change_time < datetime.datetime.now():
+                    #Need to set a new check time
+                    store.mas_weather.weather_change_time = datetime.datetime.now() + datetime.timedelta(0,random.randint(1800,5400))
+
+                    #Change weather
+                    new_weather = store.mas_shouldRain()
+
+                    if new_weather is not None and new_weather != store.mas_current_weather:
+                        #Let's see if we need to scene change
+                        store.mas_weather.should_scene_change = store.mas_current_background.isChangingRoom(
+                            store.mas_current_weather,
+                            new_weather
+                        )
+
+                        #Now we change weather
+                        store.mas_changeWeather(new_weather)
+
+                        #Play the rumble in the back to indicate thunder
+                        if new_weather == store.mas_weather_thunder:
+                            renpy.play("mod_assets/sounds/amb/thunder_1.wav",channel="backsound")
+                        return True
+
+                    elif store.mas_current_weather != store.mas_weather_def:
+                        #Let's see if we need to scene change
+                        store.mas_weather.should_scene_change = store.mas_current_background.isChangingRoom(
+                            store.mas_current_weather,
+                            store.mas_weather_def
+                        )
+
+                        store.mas_changeWeather(store.mas_weather_def)
+                        return True
+        return False

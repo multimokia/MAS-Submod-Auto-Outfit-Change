@@ -57,8 +57,8 @@ label awc_monika_player_location:
                     m 3hksdlb "Well, it seems that there's more than one [temp_city] in the world..."
 
                     show monika 1eua
-                    $ renpy.say(m, "So, which [temp_city] do you live in?")
                     #Display our scrollable
+                    $ renpy.say(m, "So, which [temp_city] do you live in?", interact=False)
                     show monika at t21
                     call screen mas_gen_scrollable_menu(awc_buildCityMenuItems(temp_city),(evhand.UNSE_X, evhand.UNSE_Y, evhand.UNSE_W, 500), evhand.UNSE_XALIGN)
                     show monika at t11
@@ -92,6 +92,9 @@ label awc_monika_player_location_end:
     m 3hua "It'll be like I'm living above you, ahaha!"
     m 3eua "The weather should change to be pretty close to what it is where you are, [player]."
     m 1ekbfa "Thanks for helping me feel closer to your reality."
+
+    #Force a weather check
+    $ awc_globals.weather_check_time -= datetime.timedelta(minutes=5)
     return
 
 label awc_monika_player_location_uncomfortable:
