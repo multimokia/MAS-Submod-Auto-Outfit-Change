@@ -1,4 +1,4 @@
-# THIS DEPENDS ON AUTO WEATHER CHANGE. AT LEAST THE `awc_utils.rpy` FILE
+# THIS DEPENDS ON AUTO WEATHER CHANGE. AT LEAST THE `awc_utils.rpy` FILE (from version 1.1)
 
 ## NOTE: you ***will*** need to make an api key and set it up. This will crash your game without it.
 
