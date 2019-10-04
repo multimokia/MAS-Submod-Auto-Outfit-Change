@@ -1,8 +1,7 @@
-# Welcome to my submods repo
+# THIS DEPENDS ON AUTO WEATHER CHANGE. AT LEAST THE `awc_utils.rpy` FILE
 
-In here, you'll be able to find submods by looking through the [releases](https://github.com/multimokia/MAS-Submods/releases) tab.
+## NOTE: you ***will*** need to make an api key and set it up. This will crash your game without it.
 
+With that out of the way:
 
-Installation is simple. For anything other than `Auto Weather Change`, simply extract it into a subfolder for submods inside your `game/` folder (for easy organization)
-
-As for `Auto Weather Change`, just merge the `game/` folder from the submod with the `game/` folder in your `DDLC/` folder.
+This submod will adjust the sunrise and sunset times in MAS automatically whenever you load to be accurate to your location.
