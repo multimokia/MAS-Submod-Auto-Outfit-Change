@@ -1,16 +1,16 @@
 #START: Styledefs
 #Create these styles to be used later
 init -1 style journal_monika is normal:
-    font "gui/font/m1.ttf"
-    size 30
+    font "mod_assets/font/m1_fixed.ttf"
+    size 34
 
 init -1 style journal_monika_slow is default_monika:
-    font "gui/font/m1.ttf"
-    size 30
+    font "mod_assets/font/m1_fixed.ttf"
+    size 34
 
 init -1 python:
-    style.hyperlink_text.font = "gui/font/m1.ttf"
-    style.hyperlink_text.size = 30
+    style.hyperlink_text.font = "mod_assets/font/m1_fixed.ttf"
+    style.hyperlink_text.size = 34
 
 
 #START: Overrides
@@ -89,14 +89,14 @@ style history_name:
     xsize gui.history_name_width
 
 style history_name_text:
-    font "gui/font/m1.ttf"
-    size 31
+    font "mod_assets/font/m1_fixed.ttf"
+    size 35
     min_width gui.history_name_width
     text_align gui.history_name_xalign
 
 style history_text:
-    font "gui/font/m1.ttf"
-    size 31
+    font "mod_assets/font/m1_fixed.ttf"
+    size 35
     xpos gui.history_text_xpos + 3
     ypos gui.history_text_ypos - 5
     xanchor gui.history_text_xalign
