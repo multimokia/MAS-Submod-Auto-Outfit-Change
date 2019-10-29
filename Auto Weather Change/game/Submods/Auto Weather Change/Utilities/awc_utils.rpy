@@ -103,12 +103,18 @@ init -20 python in awc_globals:
     #Now create the open weather map object
     owm = OWM(store.persistent._awc_API_key)
 
-    # Weather status keywords
+    #Weather status keywords
     SUN_KW = ['clear', 'sun']
-    OVERCAST_KW = ['clouds', 'fog', 'haze', 'mist', 'light rain', 'broken clouds']
-    RAIN_KW = ['rain', 'drizzle']
     THUNDER_KW = ['storm', 'hurricane', 'tornado', 'thunderstorm']
     SNOW_KW = ['snow', 'sleet']
+
+    #Weather thresh constants
+    OVERCAST_CLOUD_THRESH = 75
+    RAIN_RATE_THRESH = 3
+
+    #Depreciated
+    OVERCAST_KW = ['clouds', 'fog', 'haze', 'mist', 'light rain', 'broken clouds']
+    RAIN_KW = ['rain', 'drizzle']
 
 #NOTE: We create this dict here so we can check for existence of player location at the right init
 #If player just installed a submod requiring something being done on load
@@ -537,35 +543,39 @@ init -19 python:
 
         NOTE: Assumes that we have a form of location
         """
-        if awc_isSunWeather():
-            return store.mas_weather_def
+        observation = awc_getObservation()
 
-        elif awc_isOvercastWeather():
-            return store.mas_weather_overcast
-
-        elif awc_isRainWeather():
-            return store.mas_weather_rain
-
-        elif awc_isThunderWeather():
+        if awc_isThunderWeather(observation):
             return store.mas_weather_thunder
 
-        elif awc_isSnowWeather():
+        elif awc_isRainWeather(observation):
+            return store.mas_weather_rain
+
+        elif awc_isSnowWeather(observation):
             return store.mas_weather_snow
+
+        elif awc_isOvercastWeather(observation):
+            return store.mas_weather_overcast
 
         else:
             return store.mas_weather_def
 
-    def awc_isSunWeather():
+    def awc_isSunWeather(observation=None):
         """
         Checks if current weather description or detailed description is in the sun keywords list
+
+        IN:
+            observation - The weather observation to use to check
+            NOTE: if not provided, it is acquired via the api
 
         OUT:
             True if weather is in sun keywords, False otherwise
         """
-        weath_observaton = awc_getObservation().get_weather()
+        if not observation:
+            observation = awc_getObservation()
 
-        weather_desc = weath_observaton.get_status().lower()
-        detailed_weather_desc = weath_observaton.get_detailed_status().lower()
+        weather_desc = observation.get_weather().get_status().lower()
+        detailed_weather_desc = observation.get_weather().get_detailed_status().lower()
 
 
         return (
@@ -573,53 +583,73 @@ init -19 python:
             or detailed_weather_desc in store.awc_globals.SUN_KW
         )
 
-    def awc_isOvercastWeather():
+    def awc_isOvercastWeather(observation=None):
         """
-        Checks if current weather description or detailed description is in the overcast keywords list
+        Checks if current cloud level is > 75%
+
+        IN:
+            observation - The weather observation to use to check
+            NOTE: if not provided, it is acquired via the api
 
         OUT:
-            True if weather is in overcast keywords, False otherwise
+            True if cloud level is > 75%
         """
-        weath_observaton = awc_getObservation().get_weather()
+        if not observation:
+            observation = awc_getObservation()
 
-        weather_desc = weath_observaton.get_status().lower()
-        detailed_weather_desc = weath_observaton.get_detailed_status().lower()
+        return observation.get_weather().get_clouds() > store.awc_globals.OVERCAST_CLOUD_THRESH
 
-
-        return (
-            weather_desc in store.awc_globals.OVERCAST_KW
-            or detailed_weather_desc in store.awc_globals.OVERCAST_KW
-        )
-
-    def awc_isRainWeather():
+    def awc_isRainWeather(observation=None):
         """
-        Checks if current weather description or detailed description is in the rain keywords list
+        Checks if hourly rain rate >= 3 millimeters/hour
+
+        IN:
+            observation - The weather observation to use to check
+            NOTE: if not provided, it is acquired via the api
 
         OUT:
-            True if weather is in sun keywords, False otherwise
+            True if the hourly rain rate (mm/hour) is >= 3. False otherwise
         """
-        weath_observaton = awc_getObservation().get_weather()
+        if not observation:
+            observation = awc_getObservation()
 
-        weather_desc = weath_observaton.get_status().lower()
-        detailed_weather_desc = weath_observaton.get_detailed_status().lower()
+        rain_dict = observation.get_weather().get_rain()
 
+        #First, let's see if there's anthing in the dict.
+        #If not, we just return False as that means no rain
+        if len(rain_dict) == 0:
+            return False
 
-        return (
-            weather_desc in store.awc_globals.RAIN_KW
-            or detailed_weather_desc in store.awc_globals.RAIN_KW
-        )
+        #Now let's see if there's a 3 hr
+        three_hour_rain = rain_dict.get("3h")
 
-    def awc_isThunderWeather():
+        if three_hour_rain:
+            #Now we need to do a little bit of math and convert this to a per hour rate
+            hour_rate = three_hour_rain/3.0
+
+        #There's no 3 hour rain? Must be one hour instead then
+        else:
+            hour_rate = rain_dict.get("1h")
+
+        #If the hourly rate is >= 3, we consider this to be rain
+        return hour_rate >= store.awc_globals.RAIN_RATE_THRESH
+
+    def awc_isThunderWeather(observation=None):
         """
         Checks if current weather description or detailed description is in the thunder keywords list
+
+        IN:
+            observation - The weather observation to use to check
+            NOTE: if not provided, it is acquired via the api
 
         OUT:
             True if weather is in thunder keywords, False otherwise
         """
-        weath_observaton = awc_getObservation().get_weather()
+        if not observation:
+            observation = awc_getObservation()
 
-        weather_desc = weath_observaton.get_status().lower()
-        detailed_weather_desc = weath_observaton.get_detailed_status().lower()
+        weather_desc = observation.get_weather().get_status().lower()
+        detailed_weather_desc = observation.get_weather().get_detailed_status().lower()
 
 
         return (
@@ -627,17 +657,22 @@ init -19 python:
             or detailed_weather_desc in store.awc_globals.THUNDER_KW
         )
 
-    def awc_isSnowWeather():
+    def awc_isSnowWeather(observation=None):
         """
         Checks if current weather description or detailed description is in the snow keywords list
+
+        IN:
+            observation - The weather observation to use to check
+            NOTE: if not provided, it is acquired via the api
 
         OUT:
             True if weather is in snow keywords, False otherwise
         """
-        weath_observaton = awc_getObservation().get_weather()
+        if not observation:
+            observation = awc_getObservation()
 
-        weather_desc = weath_observaton.get_status().lower()
-        detailed_weather_desc = weath_observaton.get_detailed_status().lower()
+        weather_desc = observation.get_weather().get_status().lower()
+        detailed_weather_desc = observation.get_weather().get_detailed_status().lower()
 
 
         return (
