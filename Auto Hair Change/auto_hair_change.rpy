@@ -118,18 +118,7 @@ label monika_sethair_down:
 #START: Overridden labels
 #NOTE: We only override the post_aff_check because it falls through to the rest rather than jumps/calls
 label bye_going_somewhere_post_aff_check_override:
-
-    if mas_isO31():
-        m 1wub "Oh! Are we going trick or treating, [player]?{nw}"
-        $ _history_list.pop()
-        menu:
-            m "Oh! Are we going trick or treating, [player]?{fast}"
-            "Yes.":
-                jump bye_trick_or_treat
-
-            "No.":
-                m 2ekp "Oh, okay."
-
+    pass
 
 label bye_going_somewhere_iostart_override:
     # NOTE: jump back to this label to begin io generation

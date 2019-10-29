@@ -1,4 +1,7 @@
 # Changelog
+## October 28th, 2019:
+- Adjusted dockstat for o31 consistency with base MAS
+
 ## September 22nd, 2019:
 - Added another label override
 
