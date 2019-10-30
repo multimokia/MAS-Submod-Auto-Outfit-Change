@@ -14,8 +14,12 @@ init -1 python:
 
 
 #START: Overrides
-#These are used in place of the ones in script-ch30.rpy so we get our custom font
 init 6 python:
+    # Changing positions of the dlg text
+    # gui.text_xpos = 268
+    gui.text_ypos = 43
+
+    #These are used in place of the ones in script-ch30.rpy so we get our custom font
     def mas_enableTextSpeed():
         """
         Enables text speed
