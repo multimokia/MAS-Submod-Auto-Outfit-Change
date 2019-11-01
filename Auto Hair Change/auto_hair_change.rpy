@@ -12,6 +12,11 @@ init 999 python:
         """
         return [hair.get_sprobj() for hair in mas_selspr.filter_hair(True) if hair.name != "down"]
 
+    def ahc_has_and_unlocked(acs_name):
+        """
+        Returns True if we have the acs and it's unlocked
+        """
+        return acs_name in store.mas_selspr.ACS_SEL_MAP and store.mas_selspr.ACS_SEL_MAP[acs_name].unlocked
 
 init 5 python:
     addEvent(
@@ -142,15 +147,23 @@ label bye_going_somewhere_iowait_override:
         # i/o thread is done!
 
         #Make hair is either what player asked, or Moni's choice
-        if not persistent._mas_force_hair and monika_chr.hair == mas_hair_down:
+        if (
+            (not persistent._mas_force_hair or monika_chr.is_wearing_clothes_with_exprop("costume"))
+            and monika_chr.hair == mas_hair_down
+        ):
             $ monika_chr.change_hair(renpy.random.choice(ahc_getDayHair()), by_user=False)
 
-        #We'll wear a ribbon if it's a special day
-        if mas_isSpecialDay():
-            if 'ribbon_black' in store.mas_selspr.ACS_SEL_MAP and store.mas_selspr.ACS_SEL_MAP['ribbon_black'].unlocked:
-                $ monika_chr.wear_acs(mas_acs_ribbon_black)
-            else:
-                $ monika_chr.wear_acs(mas_acs_ribbon_def)
+            #We'll wear a ribbon if it's a special day and we're able to force
+            if mas_isSpecialDay():
+                if ahc_has_and_unlocked("multimokia_bow_black"):
+                    $ mas_sprites._acs_wear_if_found(monika_chr, "multimokia_bow_black")
+
+                elif ahc_has_and_unlocked("black_ribbon"):
+                    $ monika_chr.wear_acs(mas_acs_ribbon_black)
+
+                else:
+                    $ monika_chr.wear_acs(mas_acs_ribbon_def)
+
         jump bye_going_somewhere_rtg
 
     else:
