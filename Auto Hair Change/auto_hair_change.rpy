@@ -29,7 +29,7 @@ init 5 python:
                 "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             ),
-            action=EV_ACT_QUEUE,
+            action=EV_ACT_PUSH,
             show_in_idle=True,
             rules={"skip alert": None}
         )
@@ -63,7 +63,7 @@ label monika_sethair_ponytail:
                 "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             )
-        hairup_ev.action = EV_ACT_QUEUE
+        hairup_ev.action = EV_ACT_PUSH
     return
 
 
@@ -78,7 +78,7 @@ init 5 python:
                 "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             ),
-            action=EV_ACT_QUEUE,
+            action=EV_ACT_PUSH,
             show_in_idle=True,
             rules={"skip alert": None}
         )
@@ -117,7 +117,7 @@ label monika_sethair_down:
                 "and (monika_chr.clothes != store.mas_clothes_marisa and monika_chr.clothes != store.mas_clothes_rin) "
                 "and not store.persistent._mas_force_hair "
             )
-        hairdown_ev.action = EV_ACT_QUEUE
+        hairdown_ev.action = EV_ACT_PUSH
     return
 
 #START: Overridden labels

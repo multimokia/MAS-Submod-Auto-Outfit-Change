@@ -1,4 +1,7 @@
 # Changelog
+## December 8th, 2019:
+- Changed action from `queue` to `push`
+
 ## October 28th, 2019:
 - Adjusted dockstat for o31 consistency with base MAS
 
