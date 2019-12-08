@@ -1,6 +1,10 @@
 #Default this var so it works
 default persistent._music_playlist_mode = False
 
+#Add the label into the restart blacklist
+init 1 python:
+    evhand.RESTART_BLKLST.append('monika_welcome_home')
+
 #START: Topic/Labels
 init 50 python:
     #Reset ev
@@ -371,40 +375,40 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
 
     zorder 200
 
-    style_prefix "music_menu"
+    style_prefix mas_ui.mms_style_prefix
 
     frame:
         hbox:
             # dynamic prevous text, so we can keep button size alignments
             if page_num > 0:
                 textbutton _("<<<< Prev"):
-                    style "music_menu_prev_button"
+                    style mas_ui.mms_button_prev_style
                     action Return(page_num - 1)
 
             else:
                 textbutton _( " "):
-                    style "music_menu_prev_button"
+                    style mas_ui.mms_button_prev_style
                     sensitive False
 
             if more_pages:
                 textbutton _("Next >>>>"):
-                    style "music_menu_return_button"
+                    style mas_ui.mms_button_return_style
                     action Return(page_num + 1)
-        style "music_menu_outer_frame"
+        style mas_ui.mms_frame_outer_style
 
         hbox:
 
             frame:
-                style "music_menu_navigation_frame"
+                style mas_ui.mms_frame_navigation_style
 
             frame:
-                style "music_menu_content_frame"
+                style mas_ui.mms_frame_content_style
 
                 transclude
 
         # this part copied from navigation menu
         vbox:
-            style_prefix "music_menu"
+            style_prefix mas_ui.mms_style_prefix
 
             xpos gui.navigation_xpos
     #        yalign 0.4
@@ -414,20 +418,21 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
             for name,song in music_page:
                 textbutton _(name) action Return(song)
 
-            textbutton _("Playlist Mode"):
-                style "radio_button"
-                action ToggleField(persistent, "_music_playlist_mode")
-                selected persistent._music_playlist_mode
+            vbox:
+                style_prefix mas_ui.cbx_style_prefix
+                textbutton _("Playlist Mode"):
+                    action ToggleField(persistent, "_music_playlist_mode")
+                    selected persistent._music_playlist_mode
 
     vbox:
         yalign 1.0
 
         textbutton _(songs.NO_SONG):
-            style "music_menu_return_button"
+            style mas_ui.mms_button_return_style
             action Return(songs.NO_SONG)
 
         textbutton _("Return"):
-            style "music_menu_return_button"
+            style mas_ui.mms_button_return_style
             action Return(return_value)
 
     label "Music Menu"
