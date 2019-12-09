@@ -36,25 +36,20 @@ init 5 python:
 label monika_welcome_home:
     #Sanity check this since for whatever reason this conditional runs anyway.
     if not mas_isMorning() or persistent.current_track:
-        #Set up the notif
-        $ display_notif(m_name,["Hey [player]..."],"Topic Alerts")
+        #Firstly, we pick a song
+        $ song = nm_utils.pickSong(nm_utils.nightMusicStation)
 
-        #Set up a docking station and get a list of ogg files
-        python:
-            nightMusicStation = store.MASDockingStation(renpy.config.basedir+"/nightmusic/")
-            listOgg = nightMusicStation.getPackageList(".ogg") + nightMusicStation.getPackageList(".mp3")
-
-        #Ensure list actually has things in it
-        if len(listOgg) > 0:
-            $ song = (nightMusicStation.station + random.choice(listOgg)).replace("\\","/")
-        else:
-            #Don't show this if there's nothing in there to pick
+        if not song:
             return
+
+        #Set up the notif
+        $ display_notif(m_name, ["Hey [player]..."], "Topic Alerts")
+
 
         m 1eka "Hey [player]..."
         m 3eka "Now that we're home together, I'm going to put on a song for us to relax to.{w=0.5}.{w=0.5}.{nw}"
 
-        $ play_song(song, fadein=3.0)
+        $ nm_utils.play_song(song, fadein=3.0, is_nightmusic=True)
 
         m 1hua "There we go."
         show monika 5eubla at t11 zorder MAS_MONIKA_Z with dissolve
@@ -75,6 +70,262 @@ label monika_welcome_home:
         $ del home_ev
     return
 
+#START: Utils
+init python in nm_utils:
+    import mutagen
+    import store
+    import random
+
+    #We'll initialize our dockingstation here
+    nightMusicStation = store.MASDockingStation(renpy.config.basedir + "/nightmusic/")
+
+    def getFilesByType(station, ext):
+        """
+        Similar to MASDockingStation.getPackageList(), but retrieves a full filepath
+
+        IN:
+            station - MASDockingStation with its station pointed where we wish to look for files
+            ext - extension to look for
+
+        OUT:
+            list() - list of files with the extension provided
+        """
+        import os
+        return [
+            (station.station + "/" + package).replace("\\","/")
+            for package in os.listdir(station.station)
+            if package.endswith(ext)
+        ]
+
+    def checkSongConditional(station, songname):
+        """
+        Checks song conditionals by reading their 'Genre' field
+
+        IN:
+            station - MASDockingStation object
+            songname - the song which conditional we wish to check
+
+        OUT:
+            If the song has a conditional in the Genre field, it is evaluated and the result is returned
+            If it has no conditional, it is assumed True
+
+        NOTE: This assumes that songname is an mp3 file
+        """
+        meta_dict = mutagen.mp3.EasyMP3(station.station + songname).get("genre", None)
+
+        if meta_dict:
+            conditional = meta_dict[0]
+        else:
+            conditional = "True"
+
+        try:
+            return eval(conditional)
+        except Exception as e:
+            store.mas_utils.writelog("[ERROR]: NIGHTMUSIC - Conditional failed to evaluate: {0}\n".format(e))
+            return False
+
+    def getSongs(station, with_filepaths=False):
+        """
+        Gets the songs found in the station's directory
+
+        IN:
+            station - MASDockingStation object pointed to the directory to find songs in
+            with_filepaths - boolean, True if we want to return a list with full paths or not.
+            (Default: False)
+        """
+
+        #We need to handle oggs a little differently
+        if with_filepaths:
+            ogg_files = getFilesByType(station, ".ogg")
+        else:
+            ogg_files = station.getPackageList(".ogg")
+
+        mp3_files = station.getPackageList(".mp3")
+
+        #Now we filter the mp3 files down by their conditionals
+        mp3_files = [
+            ((station.station + mp3).replace("\\","/") if with_filepaths else mp3)
+            for mp3 in mp3_files
+            if checkSongConditional(station, mp3)
+        ]
+
+        #And return the combi list
+        return mp3_files + ogg_files
+
+    def pickSong(station):
+        """
+        Picks a song to play
+
+        IN:
+            station - MASDockingStation object pointed to the directory we're looking for songs in
+
+        OUT:
+            string - filepath to the song ready for use with renpy.play
+        """
+        #First, generate the list of songs
+        song_list = getSongs(station)
+
+        #Now, if we have no songs, we return None
+        if not song_list:
+            return None
+
+        #Otherwise, return a random choice from the songs
+        return (station.station + random.choice(song_list)).replace("\\","/")
+
+    def getPlayingSong(filepath=False):
+        """
+        Gets the current song (as string)
+
+        IN:
+            filepath - True if we want to get the filepath, False otherwise
+            (Default: False)
+        """
+        #Get the current song filepath
+        current_song_fp = renpy.music.get_playing()
+
+        #If nothing's playing, we return None
+        if not current_song_fp:
+            return None
+
+        #Otherwise, we have a song. Let's clean it up if we need to and return it
+        if filepath:
+            return current_song_fp
+        return getFilenameFromPath(current_song_fp)
+
+    def removeFromQueue(filepaths, channel="music", remove_current_track=False):
+        """
+        Removes the filenames provided from the queue (also turns off looping and runs a dequeue)
+
+        IN:
+            filepaths - list of filepaths to remove from the queue
+            channel - channel to remove songs from the queue from
+            remove_current_track - True if we also want to remove the current track, False otherwise
+            (Default: False)
+        """
+        channel = renpy.audio.audio.get_channel(channel)
+        current_track = getPlayingSong(filepath=True)
+
+        #No channel? Do nothing
+        if not channel:
+            return
+
+        #If no loop, we do nothing
+        if not channel.loop:
+            return
+
+        #Otherwise we have to iter over the filepaths and check if it should be removed
+        for fp in filepaths:
+            if (
+                fp in channel.loop
+                and ((not remove_current_track and current_track != fp) or remove_current_track)
+            ):
+                pop_index = channel.loop.index(fp)
+                channel.loop.pop(pop_index)
+
+        #Now we just remove the queue
+        channel.queue = []
+
+    def queue(filepaths, channel="music"):
+        """
+        Allows queuing of songs from a new context/alternate thread
+
+        NOTE: this will not let you duplicate paths
+
+        IN:
+            filepaths - list of filepaths to queue
+            channel - channel to queue on
+            (Default: "music")
+        """
+        #First, get channel
+        channel = renpy.audio.audio.get_channel(channel)
+
+        #If we have no channel, return. Nothing to do
+        if not channel:
+            return
+
+        #Now, we add to the channel's loop if we need to
+        for filepath in filepaths:
+            if filepath not in channel.loop:
+                channel.loop.append(filepath)
+
+    def getFilenameFromPath(filepath):
+        """
+        Cleans a filepath to a file to get just the filename
+
+        IN:
+            filepath - filepath to clean
+
+        OUT:
+            string representing filename (plus extension)
+        """
+        return filepath[filepath.rindex("/"):].replace("/","")
+
+    def modeChange():
+        """
+        Changes into and out of playlist mode seamlessly
+        """
+        #Firstly, we need to make sure we're in nightmusic.
+        if store.songs.selected_track == store.songs.FP_NIGHTMUSIC:
+            #Get a list of songs
+            song_files = getSongs(nightMusicStation, with_filepaths=True)
+            current_song = getPlayingSong(filepath=True)
+
+            #Ensure list actually has things in it
+            if len(song_files) > 0:
+                #If we're in playlistmode, we handle things differently
+                if store.persistent._music_playlist_mode:
+
+                    #Pop current song from the list of things we're going to queue
+                    if current_song in song_files:
+                        song_files.pop(song_files.index(current_song))
+
+                    #Now shuffle the list
+                    renpy.random.shuffle(song_files)
+
+                    #And queue
+                    renpy.music.queue(song_files, loop=True, clear_queue=False)
+
+                #We just want it in single song mode
+                else:
+                    #Remove things from the queue here
+                    removeFromQueue(song_files)
+
+                    play_song(current_song, is_nightmusic=True)
+
+    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False):
+        #
+        # literally just plays a song onto the music channel
+        # Also sets the currentt track
+        #
+        # IN:
+        #   song - song to play. If None, the channel is stopped
+        #   fadein - number of seconds to fade in the song
+        #   loop - True if we should loop the song if possible, False to not
+        #       loop.
+        #   set_per - True if we should set persistent track, False if not
+        if song is None:
+            song = songs.FP_NO_SONG
+            renpy.music.stop(channel="music")
+        else:
+            renpy.music.play(
+                song,
+                channel="music",
+                loop=loop,
+                synchro_start=True,
+                fadein=fadein,
+                if_changed=if_changed
+            )
+
+        if is_nightmusic:
+            store.songs.current_track = store.songs.FP_NIGHTMUSIC
+            store.songs.selected_track= store.songs.FP_NIGHTMUSIC
+        else:
+            store.songs.current_track = song
+            store.songs.selected_track = song
+
+        if set_per:
+            persistent.current_track = song
+
 #START: zz_music_selector.rpy overrides
 init python in songs:
     import os
@@ -82,15 +333,6 @@ init python in songs:
     import mutagen.oggopus as mutaopus
     import mutagen.oggvorbis as mutaogg
     import store
-
-    def getFilesByType(station,ext):
-        import os
-        return [
-            (station + "/" + package).replace("\\","/")
-            for package in os.listdir(station)
-            if package.endswith(ext)
-        ]
-
 
 
     NIGHTMUSIC = "Nightmusic"
@@ -126,13 +368,14 @@ init python in songs:
             music_choices.append((MY_FEELS, FP_MY_FEELS))
             music_choices.append((MY_CONF, FP_MY_CONF))
             music_choices.append((OKAY_EV_MON, FP_OKAY_EV_MON))
+
+            #And nightmusic
+            music_choices.append((NIGHTMUSIC, FP_NIGHTMUSIC))
+
             music_choices.append((PLAYWITHME_VAR6, FP_PLAYWITHME_VAR6))
 
             # BIG SHOUTOUT to HalHarrison for this lovely track!
             music_choices.append((DDLC_MT_80, FP_DDLC_MT_80))
-
-            #And the nightmusic
-            music_choices.append((NIGHTMUSIC, FP_NIGHTMUSIC))
 
             # NOTE: this is locked until we can set this up later.
 #            music_choices.append((MONIKA_LULLABY, FP_MONIKA_LULLABY))
@@ -258,24 +501,23 @@ init 1 python:
 
             # workaround to handle new context
             if selected_track == songs.FP_NIGHTMUSIC:
-                #Set up the stations
-                nightMusicStation = store.MASDockingStation(renpy.config.basedir+"/nightmusic/")
-                listOgg = songs.getFilesByType(nightMusicStation.station,".mp3") + songs.getFilesByType(nightMusicStation.station,".ogg")
+                #Set up the file list
+                song_files = nm_utils.getSongs(nm_utils.nightMusicStation, with_filepaths=True)
 
                 #Ensure list actually has things in it
-                if len(listOgg) > 0:
-                    #We want to loop through all songs in the list
+                if len(song_files) > 0:
+                    #Playlist mode will play all songs
                     if persistent._music_playlist_mode:
-                        renpy.random.shuffle(listOgg)
-                        play_song(listOgg)
+                        renpy.random.shuffle(song_files)
+                        nm_utils.play_song(song_files, is_nightmusic=True)
 
                     #We just want it in single song mode
                     else:
-                        song = random.choice(listOgg)
-                        play_song(song)
+                        song = random.choice(song_files)
+                        nm_utils.play_song(song, is_nightmusic=True)
 
             elif selected_track != songs.current_track:
-                play_song(selected_track, set_per=True)
+                nm_utils.play_song(selected_track, set_per=True)
 
             # unwanted interactions are no longer unwanted
             if store.mas_globals.dlg_workflow:
@@ -421,7 +663,7 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
             vbox:
                 style_prefix mas_ui.cbx_style_prefix
                 textbutton _("Playlist Mode"):
-                    action ToggleField(persistent, "_music_playlist_mode")
+                    action [ToggleField(persistent, "_music_playlist_mode"), Function(nm_utils.modeChange)]
                     selected persistent._music_playlist_mode
 
     vbox:
