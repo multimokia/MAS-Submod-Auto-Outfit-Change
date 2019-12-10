@@ -49,7 +49,7 @@ label monika_welcome_home:
         m 1eka "Hey [player]..."
         m 3eka "Now that we're home together, I'm going to put on a song for us to relax to.{w=0.5}.{w=0.5}.{nw}"
 
-        $ nm_utils.play_song(song, fadein=3.0, is_nightmusic=True)
+        $ play_song(song, fadein=3.0, is_nightmusic=True)
 
         m 1hua "There we go."
         show monika 5eubla at t11 zorder MAS_MONIKA_Z with dissolve
@@ -290,41 +290,7 @@ init python in nm_utils:
                     #Remove things from the queue here
                     removeFromQueue(song_files)
 
-                    play_song(current_song, is_nightmusic=True)
-
-    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False):
-        #
-        # literally just plays a song onto the music channel
-        # Also sets the currentt track
-        #
-        # IN:
-        #   song - song to play. If None, the channel is stopped
-        #   fadein - number of seconds to fade in the song
-        #   loop - True if we should loop the song if possible, False to not
-        #       loop.
-        #   set_per - True if we should set persistent track, False if not
-        if song is None:
-            song = songs.FP_NO_SONG
-            renpy.music.stop(channel="music")
-        else:
-            renpy.music.play(
-                song,
-                channel="music",
-                loop=loop,
-                synchro_start=True,
-                fadein=fadein,
-                if_changed=if_changed
-            )
-
-        if is_nightmusic:
-            store.songs.current_track = store.songs.FP_NIGHTMUSIC
-            store.songs.selected_track= store.songs.FP_NIGHTMUSIC
-        else:
-            store.songs.current_track = song
-            store.songs.selected_track = song
-
-        if set_per:
-            persistent.current_track = song
+                    store.play_song(current_song, is_nightmusic=True)
 
 #START: zz_music_selector.rpy overrides
 init python in songs:
@@ -509,15 +475,15 @@ init 1 python:
                     #Playlist mode will play all songs
                     if persistent._music_playlist_mode:
                         renpy.random.shuffle(song_files)
-                        nm_utils.play_song(song_files, is_nightmusic=True)
+                        play_song(song_files, is_nightmusic=True)
 
                     #We just want it in single song mode
                     else:
                         song = random.choice(song_files)
-                        nm_utils.play_song(song, is_nightmusic=True)
+                        play_song(song, is_nightmusic=True)
 
             elif selected_track != songs.current_track:
-                nm_utils.play_song(selected_track, set_per=True)
+                play_song(selected_track, set_per=True)
 
             # unwanted interactions are no longer unwanted
             if store.mas_globals.dlg_workflow:
@@ -532,6 +498,49 @@ init 1 python:
             else:
                 # otherwise we can enable interactions normally
                 mas_DropShield_mumu()
+
+    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False):
+        """
+        Literally just plays a song onto the music channel
+        Also sets the current track
+
+        IN:
+            song - song to play. If None, the channel is stopped
+            fadein - number of seconds to fade in the song
+            loop - True if we should loop the song if possible, False to not loop.
+            set_per - True if we should set persistent track, False if not
+            if_changed - True if we should change if the song is different, False otherwise (default True)
+            is_nightmusic - True if this is nightmusic and we should set vars accordingly (prevents crashes)
+        """
+        if song is None:
+            song = store.songs.FP_NO_SONG
+            renpy.music.stop(channel="music")
+
+        elif song is store.songs.FP_NIGHTMUSIC:
+            #Run a nightmusic alg for this
+            song = store.nm_utils.pickSong(nm_utils.nightMusicStation)
+            is_nightmusic = True
+
+        #Now play a song
+        renpy.music.play(
+            song,
+            channel="music",
+            loop=loop,
+            synchro_start=True,
+            fadein=fadein,
+            if_changed=if_changed
+        )
+
+        if is_nightmusic:
+            songs.current_track = store.songs.FP_NIGHTMUSIC
+            songs.selected_track= store.songs.FP_NIGHTMUSIC
+        else:
+            songs.current_track = song
+            songs.selected_track = song
+
+        if set_per:
+            persistent.current_track = song
+
 
 #START: Music Menu Override
 # MUSIC MENU ##################################################################
