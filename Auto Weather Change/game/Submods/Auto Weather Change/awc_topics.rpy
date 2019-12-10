@@ -26,7 +26,11 @@ label awc_monika_player_location:
         "Yes.":
             m 3hub "Yay!"
 
+            label .enter_city_loop:
             $ temp_city = renpy.input("So what city do you live in?", length=20).strip(' \t\n\r,').capitalize()
+
+            if not temp_city:
+                jump .enter_city_loop
 
             if awc_isInvalidLocation(temp_city):
                 m 2rsc "Hmm, I can't seem to find your city..."
