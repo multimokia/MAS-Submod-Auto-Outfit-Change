@@ -265,7 +265,10 @@ init python in nm_utils:
         Changes into and out of playlist mode seamlessly
         """
         #Firstly, we need to make sure we're in nightmusic.
-        if store.songs.selected_track == store.songs.FP_NIGHTMUSIC:
+        if (
+            store.songs.selected_track == store.songs.FP_NIGHTMUSIC
+            or store.songs.selected_track and "nightmusic" in store.songs.selected_track
+        ):
             #Get a list of songs
             song_files = getSongs(nightMusicStation, with_filepaths=True)
             current_song = getPlayingSong(filepath=True)
@@ -287,10 +290,8 @@ init python in nm_utils:
 
                 #We just want it in single song mode
                 else:
-                    #Remove things from the queue here
-                    removeFromQueue(song_files)
-
-                    store.play_song(current_song, is_nightmusic=True)
+                    # Queue the current song
+                    renpy.music.queue(current_song, loop=True, clear_queue=True)
 
 #START: zz_music_selector.rpy overrides
 init python in songs:
@@ -684,7 +685,16 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
 
         textbutton _("Return"):
             style mas_ui.mms_button_return_style
-            action Return(return_value)
+            if (
+                store.songs.current_track == store.songs.FP_NIGHTMUSIC
+                or store.songs.current_track and "nightmusic" in store.songs.current_track
+            ):
+                if not persistent._music_playlist_mode:
+                    action Return(nm_utils.getPlayingSong(filepath=True))
+                else:
+                    action Return(store.songs.FP_NIGHTMUSIC)
+            else:
+                action Return(return_value)
 
     label "Music Menu"
 
