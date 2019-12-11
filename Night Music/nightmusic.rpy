@@ -36,11 +36,15 @@ init 5 python:
 label monika_welcome_home:
     #Sanity check this since for whatever reason this conditional runs anyway.
     if not mas_isMorning() or persistent.current_track:
-        #Firstly, we pick a song
-        $ song = nm_utils.pickSong(nm_utils.nightMusicStation)
+        #Firstly, we pick a song (or songs)
+        if persistent._music_playlist_mode:
+            $ song = getSongs(nightMusicStation, with_filepaths=True)
+        else:
+            $ song = nm_utils.pickSong(nm_utils.nightMusicStation)
 
+        #We have nothing? Just return
         if not song:
-            return
+            jump .recond
 
         #Set up the notif
         $ display_notif(m_name, ["Hey [player]..."], "Topic Alerts")
@@ -56,6 +60,7 @@ label monika_welcome_home:
         m 5eubla "Let's have a relaxing evening together, [player]."
 
     else:
+        label .recond:
         #Reset ev if not night
         $ home_ev = mas_getEV('monika_welcome_home')
         $ home_ev.conditional=(
@@ -286,7 +291,7 @@ init python in nm_utils:
                     renpy.random.shuffle(song_files)
 
                     #And queue
-                    renpy.music.queue(song_files, loop=True, clear_queue=False)
+                    renpy.music.queue(song_files, loop=True, clear_queue=True)
 
                 #We just want it in single song mode
                 else:
@@ -621,9 +626,22 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
         $ return_value = songs.current_track
 
 
-    # allows the music menu to quit using hotkey
-    key "noshift_M" action Return(return_value)
-    key "noshift_m" action Return(return_value)
+    #Logic to fix looping upon exiting the music menu
+    if (
+        store.songs.current_track == store.songs.FP_NIGHTMUSIC
+        or store.songs.current_track and "nightmusic" in store.songs.current_track
+    ):
+        if not persistent._music_playlist_mode:
+            $ return_key = nm_utils.getPlayingSong(filepath=True)
+        else:
+            $ return_key = store.songs.FP_NIGHTMUSIC
+    else:
+        $ return_key = return_value
+
+    #Allows the music menu to quit using hotkey
+    key "noshift_M" action Return(return_key)
+    key "noshift_m" action Return(return_key)
+
 
     zorder 200
 
