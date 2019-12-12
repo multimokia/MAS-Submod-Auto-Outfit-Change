@@ -38,7 +38,7 @@ label monika_welcome_home:
     if not mas_isMorning() or persistent.current_track:
         #Firstly, we pick a song (or songs)
         if persistent._music_playlist_mode:
-            $ song = getSongs(nightMusicStation, with_filepaths=True)
+            $ song = nm_utils.getSongs(nm_utils.nightMusicStation, with_filepaths=True)
         else:
             $ song = nm_utils.pickSong(nm_utils.nightMusicStation)
 
