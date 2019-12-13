@@ -39,6 +39,7 @@ label monika_welcome_home:
         #Firstly, we pick a song (or songs)
         if persistent._music_playlist_mode:
             $ song = nm_utils.getSongs(nm_utils.nightMusicStation, with_filepaths=True)
+            $ renpy.random.shuffle(song)
         else:
             $ song = nm_utils.pickSong(nm_utils.nightMusicStation)
 
