@@ -1,4 +1,8 @@
 # Changelog
+## January 1st, 2020:
+- Black Ribbon fix
+- Black bow can only be worn with non-twintail hairstyles
+
 ## December 8th, 2019:
 - Changed action from `queue` to `push`
 

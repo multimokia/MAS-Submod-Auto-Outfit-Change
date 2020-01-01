@@ -155,10 +155,13 @@ label bye_going_somewhere_iowait_override:
 
             #We'll wear a ribbon if it's a special day and we're able to force
             if mas_isSpecialDay():
-                if ahc_has_and_unlocked("multimokia_bow_black"):
+                if (
+                    ahc_has_and_unlocked("multimokia_bow_black")
+                    and not monika_chr.is_wearing_hair_with_exprop("twintails")
+                ):
                     $ mas_sprites._acs_wear_if_found(monika_chr, "multimokia_bow_black")
 
-                elif ahc_has_and_unlocked("black_ribbon"):
+                elif ahc_has_and_unlocked("ribbon_black"):
                     $ monika_chr.wear_acs(mas_acs_ribbon_black)
 
                 else:
