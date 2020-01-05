@@ -84,7 +84,7 @@ init -980 python in submod_utils:
 
         OUT:
             list of args if the function is present
-            If functin is not present, None is returned
+            If function is not present, None is returned
         """
         global function_plugins
 
