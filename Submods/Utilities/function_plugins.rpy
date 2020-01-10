@@ -11,6 +11,21 @@ init -980 python in submod_utils:
 
     function_plugins = dict()
 
+    #START: Decorator Function
+    def functionplugin(_label, _args=[]):
+        """
+        Decorator function to register a plugin
+        """
+        def wrap(_function):
+            registerFunction(
+                _label,
+                _function,
+                _args
+            )
+            return _function
+        return wrap
+
+    #START: Internal functions
     def getAndRunFunctions(key=None):
         """
         Gets and runs functions within the key provided
