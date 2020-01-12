@@ -1,4 +1,8 @@
 # Changelog
+## January 12th, 2020:
+- Dependency added
+- Removed overrides, replaced with function plugins
+
 ## January 1st, 2020:
 - Black Ribbon fix
 - Black bow can only be worn with non-twintail hairstyles
