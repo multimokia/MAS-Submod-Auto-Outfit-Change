@@ -680,6 +680,31 @@ init -19 python:
             or detailed_weather_desc in store.awc_globals.SNOW_KW
         )
 
+    def awc_getTemperature(observation=None, temp="temp"):
+        """
+        Checks the temperature at the player's location
+
+        IN:
+            observation - The weather observation to use to check
+            NOTE: if not provided, it is acquired via the api
+            temp - The temperature we want to check. Accepts the following values
+                1) "temp_min": Minimum temperature of the day
+                2) "temp": Current temperature
+                3) "temp_max": Maximum temperature of the day
+            (Default: "temp")
+
+        OUT:
+            The temperature depending on the provided temp value
+        """
+
+        if not observation:
+            observation = awc_getObservation()
+
+        if not temp:
+            temp = "temp"
+
+        return observation.get_weather().get_temperature(unit='celsius')[temp]
+
     def awc_weatherProgress():
         """
         Asyncronous weather progress container.
