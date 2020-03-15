@@ -1,4 +1,10 @@
 # Changelog
+## March 15th, 2020:
+- Adjusted for more types of night hair
+- Allowed spritepack support using ex_props
+- Uses new emptydesk transition labels
+- Chance to change hair on load again if already set hair
+
 ## January 12th, 2020:
 - Dependency added
 - Removed overrides, replaced with function plugins
