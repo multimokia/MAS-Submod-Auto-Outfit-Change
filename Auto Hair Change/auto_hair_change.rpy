@@ -126,13 +126,23 @@ init python in ahc_utils:
                 True if last seen on _date
                 False otherwise
         """
-        ev = store.mas_getEV(ev_label)
+        #NOTE: This try/except is for use of this function in event conditionals
+        #Since mas_getEV doesn't exist until init 6
+        try:
+            ev = store.mas_getEV(ev_label)
+        except:
+            ev = None
 
-        #If the event doesn't exist or we haven't seen it, it hasn't been seen.
-        if not ev or not ev.last_seen:
+        #If the event doesn't exist, return None to note it
+        if not ev:
+            return None
+
+        #No last seen means we know it wasn't seen on the date
+        elif not ev.last_seen:
             return False
 
-        elif _date is None:
+        #Otherwise let's do some work
+        if _date is None:
             _date = datetime.date.today()
 
         #Otherwise let's check
@@ -155,11 +165,19 @@ init python in ahc_utils:
                 True if monika_sethair_down has run in the current night period
                 False otherwise
         """
-        #Get our ev
-        hairdown_ev = store.mas_getEV("monika_sethair_down")
+        #NOTE: This try/except is for use of this function in event conditionals
+        #Since mas_getEV doesn't exist until init 6
+        try:
+            ev = store.mas_getEV("monika_sethair_down")
+        except:
+            ev = None
 
-        #If we can't get the ev or it hasn't been seen before, then we can't do anything and we'll just return False
-        if not hairdown_ev or not hairdown_ev.last_seen:
+        #If we don't have the ev, we return None to note it
+        if not ev:
+            return None
+
+        #If we've not seen it before, we know it hasn't run and don't need to do more work
+        elif not ev.last_seen:
             return False
 
         _now = datetime.datetime.now()
@@ -173,17 +191,18 @@ init python in ahc_utils:
                     or (
                         store.mas_isMNtoSR(_now)
                         and not (lastSeenOnDay("monika_sethair_down", yesterday)
-                        and store.mas_isSStoMN(hairdown_ev.last_seen))
+                        and store.mas_isSStoMN(ev.last_seen))
                     )
                 )
             )
             or (
                 lastSeenOnDay("monika_sethair_down")
                 and store.mas_isSStoMN(_now)
-                and store.mas_isMNtoSR(hairdown_ev.last_seen)
+                and store.mas_isMNtoSR(ev.last_seen)
             )
         )
 
+init 999 python in ahc_utils:
     @store.submod_utils.functionplugin("bye_going_somewhere_rtg")
     def getReady():
         """
