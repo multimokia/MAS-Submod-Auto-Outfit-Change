@@ -1,3 +1,8 @@
+default persistent._ahc_last_set_hair = {
+    "day": None,
+    "night": None
+}
+
 init python in ahc_utils:
     import store
     import datetime
@@ -206,29 +211,24 @@ init python in ahc_utils:
                     store.monika_chr.wear_acs(mas_acs_ribbon_def)
 
 init 5 python:
-    if (
-        (
-            len(store.ahc_utils.getDayHair()) > 1
-            and store.ahc_utils.isWearingNightHair()
-            and store.ahc_utils.isWearingDayHair()
-            and renpy.random.randint(1, 4)
+    addEvent(
+        Event(
+            persistent.event_database,
+            eventlabel="monika_sethair_ponytail",
+            conditional=(
+                "mas_isMorning() "
+                "and monika_chr.clothes != store.mas_clothes_rin "
+                "and not store.persistent._mas_force_hair "
+                "and ((len(store.ahc_utils.getDayHair()) > 1 "
+                "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
+                "or not store.ahc_utils.isWearingDayHair()) "
+                "and mas_timePastSince(persistent._ahc_last_set_hair['day'], datetime.timedelta(hours=12))"
+            ),
+            action=EV_ACT_PUSH,
+            show_in_idle=True,
+            rules={"skip alert": None}
         )
-        or not store.ahc_utils.isWearingDayHair()
-    ):
-        addEvent(
-            Event(
-                persistent.event_database,
-                eventlabel="monika_sethair_ponytail",
-                conditional=(
-                    "mas_isMorning() "
-                    "and monika_chr.clothes != store.mas_clothes_rin "
-                    "and not store.persistent._mas_force_hair "
-                ),
-                action=EV_ACT_PUSH,
-                show_in_idle=True,
-                rules={"skip alert": None}
-            )
-        )
+    )
 
 label monika_sethair_ponytail:
     if ahc_utils.lastSeenOnDay("monika_sethair_ponytail"):
@@ -263,6 +263,8 @@ label monika_sethair_ponytail:
 
         renpy.pause(1.0, hard=True)
 
+        persistent._ahc_last_set_hair["day"] = datetime.datetime.now()
+
     call mas_transition_from_emptydesk("monika 3hub")
 
     if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
@@ -280,35 +282,34 @@ label monika_sethair_ponytail:
             "mas_isMorning() "
             "and monika_chr.clothes != store.mas_clothes_rin "
             "and not store.persistent._mas_force_hair "
+            "and ((len(store.ahc_utils.getDayHair()) > 1 "
+            "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
+            "or not store.ahc_utils.isWearingDayHair()) "
+            "and mas_timePastSince(persistent._ahc_last_set_hair['day'], datetime.timedelta(hours=12))"
         )
         hairup_ev.action = EV_ACT_PUSH
     return
 
 
 init 5 python:
-    if (
-        (
-            len(store.ahc_utils.getNightHair()) > 1
-            and store.ahc_utils.isWearingDayHair()
-            and store.ahc_utils.isWearingNightHair()
-            and renpy.random.randint(1,4)
+    addEvent(
+        Event(
+            persistent.event_database,
+            eventlabel="monika_sethair_down",
+            conditional=(
+                "not mas_isMorning() "
+                "and monika_chr.clothes != store.mas_clothes_rin "
+                "and not store.persistent._mas_force_hair "
+                "and ((len(store.ahc_utils.getNightHair()) > 1 "
+                "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
+                "or not store.ahc_utils.isWearingNightHair()) "
+                "and mas_timePastSince(persistent._ahc_last_set_hair['night'], datetime.timedelta(hours=12))"
+            ),
+            action=EV_ACT_PUSH,
+            show_in_idle=True,
+            rules={"skip alert": None}
         )
-        or not store.ahc_utils.isWearingNightHair()
-    ):
-        addEvent(
-            Event(
-                persistent.event_database,
-                eventlabel="monika_sethair_down",
-                conditional=(
-                    "not mas_isMorning() "
-                    "and monika_chr.clothes != store.mas_clothes_rin "
-                    "and not store.persistent._mas_force_hair "
-                ),
-                action=EV_ACT_PUSH,
-                show_in_idle=True,
-                rules={"skip alert": None}
-            )
-        )
+    )
 
 label monika_sethair_down:
     if ahc_utils.hasHairDownRun():
@@ -324,6 +325,7 @@ label monika_sethair_down:
             m 1eua "Give me a moment [player], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
 
     call mas_transition_to_emptydesk
+
     python:
         renpy.pause(1.0, hard=True)
 
@@ -340,6 +342,8 @@ label monika_sethair_down:
         )
 
         renpy.pause(1.0, hard=True)
+
+        persistent._ahc_last_set_hair["night"] = datetime.datetime.now()
 
     call mas_transition_from_emptydesk("monika 1eua")
 
@@ -366,6 +370,10 @@ label monika_sethair_down:
             "not mas_isMorning() "
             "and monika_chr.clothes != store.mas_clothes_rin "
             "and not store.persistent._mas_force_hair "
+            "and ((len(store.ahc_utils.getNightHair()) > 1 "
+            "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
+            "or not store.ahc_utils.isWearingNightHair()) "
+            "and mas_timePastSince(persistent._ahc_last_set_hair['night'], datetime.timedelta(hours=12))"
         )
         hairdown_ev.action = EV_ACT_PUSH
     return
