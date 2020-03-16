@@ -254,7 +254,7 @@ label monika_sethair_ponytail:
         day_hair_list = ahc_utils.getDayHair()
 
         if ahc_utils.isWearingDayHair():
-            day_hair_list.pop(monika_chr.hair)
+            day_hair_list.remove(monika_chr.hair)
 
         monika_chr.change_hair(
             renpy.random.choice(day_hair_list),
@@ -334,7 +334,7 @@ label monika_sethair_down:
 
         #If we're already wearing night hair, we don't want to come back as the same
         if ahc_utils.isWearingNightHair():
-            night_hair_list.pop(night_hair_list.index(monika_chr.hair))
+            night_hair_list.remove(monika_chr.hair)
 
         monika_chr.change_hair(
             renpy.random.choice(night_hair_list),
