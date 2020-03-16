@@ -249,11 +249,11 @@ label monika_sethair_ponytail:
     call mas_transition_to_emptydesk
 
     python:
-        renpy.pause(1.0, hard=True)
+        renpy.pause(3.0, hard=True)
 
         day_hair_list = ahc_utils.getDayHair()
 
-        if monika_chr.isWearingDayHair():
+        if ahc_utils.isWearingDayHair():
             day_hair_list.pop(monika_chr.hair)
 
         monika_chr.change_hair(
@@ -261,7 +261,7 @@ label monika_sethair_ponytail:
             by_user=False
         )
 
-        renpy.pause(1.0, hard=True)
+        renpy.pause(2.0, hard=True)
 
         persistent._ahc_last_set_hair["day"] = datetime.datetime.now()
 
@@ -327,7 +327,7 @@ label monika_sethair_down:
     call mas_transition_to_emptydesk
 
     python:
-        renpy.pause(1.0, hard=True)
+        renpy.pause(3.0, hard=True)
 
         #Get the night hair
         night_hair_list = ahc_utils.getNightHair()
@@ -341,7 +341,7 @@ label monika_sethair_down:
             by_user=False
         )
 
-        renpy.pause(1.0, hard=True)
+        renpy.pause(2.0, hard=True)
 
         persistent._ahc_last_set_hair["night"] = datetime.datetime.now()
 
