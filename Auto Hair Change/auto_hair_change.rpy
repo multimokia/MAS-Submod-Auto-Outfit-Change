@@ -280,6 +280,12 @@ label monika_sethair_ponytail:
             by_user=False
         )
 
+        thermos_acs = monika_chr.get_acs_of_type("thermos-mug")
+
+        if thermos_acs:
+            monika_chr.remove_acs(thermos_acs)
+            mas_rmallEVL("mas_consumables_remove_thermos")
+
         renpy.pause(2.0, hard=True)
 
         persistent._ahc_last_set_hair["day"] = datetime.datetime.now()
@@ -359,6 +365,12 @@ label monika_sethair_down:
             renpy.random.choice(night_hair_list),
             by_user=False
         )
+
+        thermos_acs = monika_chr.get_acs_of_type("thermos-mug")
+
+        if thermos_acs:
+            monika_chr.remove_acs(thermos_acs)
+            mas_rmallEVL("mas_consumables_remove_thermos")
 
         renpy.pause(2.0, hard=True)
 
