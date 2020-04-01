@@ -536,6 +536,7 @@ init 1 python:
             loop=loop,
             synchro_start=True,
             fadein=fadein,
+            fadeout=fadeout,
             if_changed=if_changed
         )
 
