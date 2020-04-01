@@ -3,6 +3,10 @@ default persistent._ahc_last_set_hair = {
     "night": None
 }
 
+#Fix for the removal of Rin
+init python:
+    mas_clothes_rin = None
+
 init python in ahc_utils:
     import store
     import datetime
@@ -236,7 +240,6 @@ init 5 python:
             eventlabel="monika_sethair_ponytail",
             conditional=(
                 "mas_isMorning() "
-                "and monika_chr.clothes != store.mas_clothes_rin "
                 "and not store.persistent._mas_force_hair "
                 "and ((len(store.ahc_utils.getDayHair()) > 1 "
                 "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
@@ -305,7 +308,6 @@ label monika_sethair_ponytail:
 
         hairup_ev.conditional=(
             "mas_isMorning() "
-            "and monika_chr.clothes != store.mas_clothes_rin "
             "and not store.persistent._mas_force_hair "
             "and ((len(store.ahc_utils.getDayHair()) > 1 "
             "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
@@ -323,7 +325,6 @@ init 5 python:
             eventlabel="monika_sethair_down",
             conditional=(
                 "not mas_isMorning() "
-                "and monika_chr.clothes != store.mas_clothes_rin "
                 "and not store.persistent._mas_force_hair "
                 "and ((len(store.ahc_utils.getNightHair()) > 1 "
                 "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
@@ -399,7 +400,6 @@ label monika_sethair_down:
 
         hairdown_ev.conditional=(
             "not mas_isMorning() "
-            "and monika_chr.clothes != store.mas_clothes_rin "
             "and not store.persistent._mas_force_hair "
             "and ((len(store.ahc_utils.getNightHair()) > 1 "
             "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
