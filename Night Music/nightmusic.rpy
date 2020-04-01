@@ -506,7 +506,7 @@ init 1 python:
                 # otherwise we can enable interactions normally
                 mas_DropShield_mumu()
 
-    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False):
+    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False, fadeout=0.0):
         """
         Literally just plays a song onto the music channel
         Also sets the current track
@@ -518,10 +518,11 @@ init 1 python:
             set_per - True if we should set persistent track, False if not
             if_changed - True if we should change if the song is different, False otherwise (default True)
             is_nightmusic - True if this is nightmusic and we should set vars accordingly (prevents crashes)
+            fadeout - Amount of time it takes to fade out a track (if you play None)
         """
         if song is None:
             song = store.songs.FP_NO_SONG
-            renpy.music.stop(channel="music")
+            renpy.music.stop(channel="music", fadeout=fadeout)
 
         elif song is store.songs.FP_NIGHTMUSIC:
             #Run a nightmusic alg for this
