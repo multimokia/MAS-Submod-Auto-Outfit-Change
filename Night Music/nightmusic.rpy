@@ -1,3 +1,29 @@
+init -990 python in mas_submod_utils:
+    Submod(
+        author="multimokia",
+        name="Nightmusic",
+        description=(
+            "This submod allows Monika to play a song for spending time with her in the evenings.\n"
+            "Compatible with {a=https://github.com/Booplicate/MAS-Submods-YouTubeMusic/releases/latest}{i}{u}Youtube Music{/u}{/i}{/a}."
+        ),
+        version="2.1.0",
+        settings_pane="nightmusic_settings"
+    )
+
+#The status panel
+screen nightmusic_settings():
+    vbox:
+        box_wrap False
+        xfill True
+        xmaximum 1000
+
+        hbox:
+            style_prefix mas_ui.cbx_style_prefix
+            box_wrap False
+            $ curr_song = nm_utils.getPlayingSong()
+            if curr_song:
+                text "Current song: {0}".format(nm_utils.getPlayingSong())
+
 #Default this var so it works
 default persistent._music_playlist_mode = False
 
@@ -506,7 +532,7 @@ init 1 python:
                 # otherwise we can enable interactions normally
                 mas_DropShield_mumu()
 
-    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False, fadeout=0.0):
+    def play_song(song, fadein=0.0, loop=True, set_per=False, if_changed=True, is_nightmusic=False, fadeout=0.0, **kwargs):
         """
         Literally just plays a song onto the music channel
         Also sets the current track
