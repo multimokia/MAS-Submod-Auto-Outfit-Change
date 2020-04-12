@@ -758,9 +758,9 @@ init -19 python:
             observation - The weather observation to use to check
             NOTE: if not provided, it is acquired via the api
             temp - The temperature we want to check. Accepts the following values
-                1) "temp_min": Minimum temperature of the day
+                1) "temp_min": Min current temperature in the city
                 2) "temp": Current temperature
-                3) "temp_max": Maximum temperature of the day
+                3) "temp_max": Max current temperature in the city
             (Default: "temp")
 
             NOTE: "temp_min" and "temp_max" are optional parameters.
