@@ -15,15 +15,27 @@ screen auto_atmos_change_settings():
         xmaximum 1000
 
         hbox:
-            style_prefix mas_ui.cbx_style_prefix
-            box_wrap False
-            textbutton _("Auto Weather Change"):
-                action ToggleField(persistent, "_awc_enabled")
-                selected persistent._awc_enabled
+            if bool(persistent._awc_API_key):
+                style_prefix mas_ui.cbx_style_prefix
+                box_wrap False
+                textbutton _("Auto Weather Change"):
+                    action ToggleField(persistent, "_awc_enabled")
+                    selected persistent._awc_enabled
 
-            textbutton _("Auto Sun Times"):
-                action Function(store.awc_utils.toggleAST)
-                selected persistent._awc_ast_enabled
+                textbutton _("Auto Sun Times"):
+                    action Function(store.awc_utils.toggleAST)
+                    selected persistent._awc_ast_enabled
+
+            else:
+                text "Please add a valid API key to use this submod.": #You can create one {a=https://openweathermap.org/api}{i}{u}here{/u}{/i}{/a}.":
+                    xalign 1.0 yalign 0.0
+                    style mas_ui.mm_tt_style
+
+    if bool(persistent._awc_API_key):
+        text "API Key Valid":
+            xalign 1.0 yalign 0.0
+            xoffset -10
+            style mas_ui.mm_tt_style
 
 #The api key we'll use to access Open Weather Network's data
 default persistent._awc_API_key = None
@@ -750,6 +762,10 @@ init -19 python:
                 2) "temp": Current temperature
                 3) "temp_max": Maximum temperature of the day
             (Default: "temp")
+
+            NOTE: "temp_min" and "temp_max" are optional parameters.
+            Mean the min / max temperature in the city at the current moment to see deviation from current
+            temp just for your reference.
 
         OUT:
             The temperature depending on the provided temp value
