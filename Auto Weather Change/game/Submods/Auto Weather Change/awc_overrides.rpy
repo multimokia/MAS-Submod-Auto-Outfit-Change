@@ -9,7 +9,7 @@ init 1 python:
         """
 
         # If the key and the location are valid we use the weather from the api
-        if store.awc_canGetAPIWeath() and awc_testConnection():
+        if ((store.awc_canGetAPIWeath() and awc_testConnection()) and store.persistent._awc_enabled):
             return store.awc_weathFromAPI()
 
         else:

@@ -1,4 +1,38 @@
+init -990 python in mas_submod_utils:
+    Submod(
+        author="multimokia and Legendkiller21",
+        name="Auto Atmos Change",
+        description="This submod allows Monika's room to match either the weather or the sunrise and sunset times (or both) to your own location.",
+        version="2.0.0",
+        settings_pane="auto_atmos_change_settings"
+    )
+
+#Our settings + Status pane
+screen auto_atmos_change_settings():
+    vbox:
+        box_wrap False
+        xfill True
+        xmaximum 1000
+
+        hbox:
+            style_prefix mas_ui.cbx_style_prefix
+            box_wrap False
+            textbutton _("Auto Weather Change"):
+                action ToggleField(persistent, "_awc_enabled")
+                selected persistent._awc_enabled
+
+            textbutton _("Auto Sun Times"):
+                action Function(store.awc_utils.toggleAST)
+                selected persistent._awc_ast_enabled
+
+#The api key we'll use to access Open Weather Network's data
 default persistent._awc_API_key = None
+
+#Whether or not we have Auto Weather Change enabled
+default persistent._awc_enabled = True
+
+#Whether or not we have Auto Sun Times enabled
+default persistent._awc_ast_enabled = True
 
 init -18 python:
     #Initialize the lookup
@@ -8,6 +42,30 @@ init -18 python:
     await_weatherProgress = store.mas_threading.MASAsyncWrapper(
         store.awc_weatherProgress
     )
+
+init -10 python in awc_utils:
+    import store
+    def toggleAST():
+        """
+        Toggles the auto-sun-times functionality
+        """
+        if store.persistent._awc_ast_enabled:
+            store.persistent._awc_ast_enabled = False
+
+        else:
+            #If we're enabling this, we should reajust the values
+            store.persistent._awc_ast_enabled = True
+            store.persistent._mas_sunrise = store.awc_dtToMASTime(store.awc_getSunriseDT())
+            store.persistent._mas_sunset = store.awc_dtToMASTime(store.awc_getSunsetDT())
+
+    #And do the startup check here too
+    if (
+        store.persistent._awc_ast_enabled
+        and store.awc_canGetAPIWeath()
+        and store.awc_testConnection()
+    ):
+        store.persistent._mas_sunrise = store.awc_dtToMASTime(store.awc_getSunriseDT())
+        store.persistent._mas_sunset = store.awc_dtToMASTime(store.awc_getSunsetDT())
 
 init -200 python in awc_globals:
     #Store base url in a global store
@@ -688,13 +746,10 @@ init -19 python:
             observation - The weather observation to use to check
             NOTE: if not provided, it is acquired via the api
             temp - The temperature we want to check. Accepts the following values
-                1) "temp_min": Min current temperature in the city.
+                1) "temp_min": Minimum temperature of the day
                 2) "temp": Current temperature
-                3) "temp_max": Max current temperature in the city.
+                3) "temp_max": Maximum temperature of the day
             (Default: "temp")
-            NOTE: "temp_min" and "temp_max" are optional parameters mean min / max
-            temperature in the city at the current moment to see deviation from current
-            temp just for your reference.
 
         OUT:
             The temperature depending on the provided temp value
@@ -731,8 +786,11 @@ init -19 python:
             store.awc_globals.weather_check_time = datetime.datetime.now() + datetime.timedelta(0,300)
 
             if (
-                (awc_testConnection() and store.awc_canGetAPIWeath())
-                or (not awc_testConnection() and store.awc_canGetAPIWeath() and not awc_offlineTimerCheck())
+                store.persistent._awc_enabled
+                and (
+                    (awc_testConnection() and store.awc_canGetAPIWeath())
+                    or (not awc_testConnection() and store.awc_canGetAPIWeath() and not awc_offlineTimerCheck())
+                )
             ):
                 if awc_testConnection():
                     #We have connection and a valid url. Get weath from api
@@ -799,4 +857,5 @@ init -19 python:
 
                         store.mas_changeWeather(store.mas_weather_def)
                         return True
+
         return False
