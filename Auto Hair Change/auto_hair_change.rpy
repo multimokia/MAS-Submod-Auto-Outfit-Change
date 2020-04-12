@@ -1,3 +1,11 @@
+init -990 python in mas_submod_utils:
+    Submod(
+        author="multimokia",
+        name="Auto Hair Change",
+        description="A submod which allows Monika to pick her own hairstyles for day and night.",
+        version="2.3.0"
+    )
+
 default persistent._ahc_last_set_hair = {
     "day": None,
     "night": None
@@ -207,7 +215,7 @@ init python in ahc_utils:
         )
 
 init 999 python in ahc_utils:
-    @store.submod_utils.functionplugin("bye_going_somewhere_rtg")
+    @store.mas_submod_utils.functionplugin("bye_going_somewhere_rtg")
     def getReady():
         """
         Gets Monika ready for a date
