@@ -22,7 +22,7 @@ screen nightmusic_settings():
             box_wrap False
             $ curr_song = nm_utils.getPlayingSong()
             if curr_song:
-                text "Current song: {0}".format(nm_utils.getPlayingSong())
+                text "Current song: {0}".format(nm_utils.getPlayingSong().replace('[', "[["))
 
 #Default this var so it works
 default persistent._music_playlist_mode = False
