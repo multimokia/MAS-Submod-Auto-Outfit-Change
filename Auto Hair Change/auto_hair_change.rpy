@@ -11,7 +11,7 @@ init -990 python in mas_submod_utils:
     )
 
 init -1 python:
-    layout.AHC_UJ_WHEN = (
+    tt_when_to_update = (
         "Just updated or reinstalled your hair spritepacks? Use this to get them working with AHC again."
     )
 
