@@ -12,13 +12,12 @@ init -990 python in mas_submod_utils:
 
 init -1 python:
     layout.AHC_UJ_WHEN = (
-        "Use this to migrate your hair jsons to work with this submod. "
-        "You should only really need to do this if you just updated and/or reinstalled sprite jsons."
+        "Just updated or reinstalled your hair spritepacks? Use this to get them working with AHC again."
     )
 
 #START: Settings pane
 screen auto_hair_change_settings_screen():
-    default tooltip = Tooltip("")
+    $ submods_screen_tt = store.renpy.get_screen("submods", "screens").scope["tooltip"]
     vbox:
         box_wrap False
         xfill True
@@ -30,12 +29,8 @@ screen auto_hair_change_settings_screen():
 
             textbutton _("Update Jsons"):
                 action Function(store.ahc_utils.__updateJsons)
-                hovered tooltip.Action(layout.AHC_UJ_WHEN)
-
-    text tooltip.value:
-        xalign 0 yalign 1.0
-        xoffset 300 yoffset -10
-        style "main_menu_version"
+                hovered SetField(submods_screen_tt, "value", tt_when_to_update)
+                unhovered SetField(submods_screen_tt, "value", submods_screen_tt.default)
 
 #START: Update scripts
 label multimokia_auto_hair_change_v2_3_0(version="v2_3_0"):
