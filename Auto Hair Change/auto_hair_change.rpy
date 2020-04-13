@@ -3,8 +3,47 @@ init -990 python in mas_submod_utils:
         author="multimokia",
         name="Auto Hair Change",
         description="A submod which allows Monika to pick her own hairstyles for day and night.",
-        version="2.3.0"
+        version="2.3.0",
+        version_updates={
+            "multimokia_auto_hair_change_v2_3_0": "multimokia_auto_hair_change_v2_3_1"
+        },
+        settings_pane="auto_hair_change_settings_screen"
     )
+
+init -1 python:
+    layout.AHC_UJ_WHEN = (
+        "Use this to migrate your hair jsons to work with this submod. "
+        "You should only really need to do this if you just updated and/or reinstalled sprite jsons."
+    )
+
+#START: Settings pane
+screen auto_hair_change_settings_screen():
+    default tooltip = Tooltip("")
+    vbox:
+        box_wrap False
+        xfill True
+        xmaximum 1000
+
+        hbox:
+            style_prefix mas_ui.cbx_style_prefix
+            box_wrap False
+
+            textbutton _("Update Jsons"):
+                action Function(store.ahc_utils.__updateJsons)
+                hovered tooltip.Action(layout.AHC_UJ_WHEN)
+
+    text tooltip.value:
+        xalign 0 yalign 1.0
+        xoffset 300 yoffset -10
+        style "main_menu_version"
+
+#START: Update scripts
+label multimokia_auto_hair_change_v2_3_0(version="v2_3_0"):
+    return
+
+label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
+    $ ahc_utils.__updateJsons()
+    return
 
 default persistent._ahc_last_set_hair = {
     "day": None,
@@ -20,7 +59,7 @@ init python in ahc_utils:
     import datetime
 
     #Reset force hair, so we can have Moni set her own hair next sesh
-    renpy.game.persistent._mas_force_hair = False
+    store.persistent._mas_force_hair = False
 
     __BUILTIN_DAY_HAIR = [
         store.mas_hair_def,
@@ -31,6 +70,46 @@ init python in ahc_utils:
         store.mas_hair_down,
         store.mas_hair_downtiedstrand
     ]
+
+    def __updateJsons():
+        """
+        Updates the jsons to add ex_props for this submod
+        Additionally, will update sprites for runtime as well
+        """
+        import json
+
+        JSON_PATH = "mod_assets/monika/j/"
+
+        #filename: {ex_prop: value}
+        json_update_map = {
+            "orcaramelo_hair_bunbraid.json": {"day": True},
+            "orcaramelo_hair_ponytailbraid.json": {"day": True},
+            "orcaramelo_hair_twintails.json": {"day": True},
+            "orcaramelo_hair_twinbun.json": {"day": True},
+            "orcaramelo_hair_usagi.json": {"day": True}
+        }
+
+        for json_filename, added_ex_props in json_update_map.iteritems():
+            if renpy.loadable(JSON_PATH + json_filename):
+                with open("{0}/{1}{2}".format(renpy.config.gamedir, JSON_PATH, json_filename)) as jfile:
+                    json_data = json.load(jfile)
+
+                    #If there is no expsting ex_props field, we shoud create it
+                    if "ex_props" not in json_data:
+                        json_data["ex_props"] = dict()
+
+                    #Now add the new data
+                    json_data["ex_props"].update(added_ex_props)
+
+                    #Now we want to update the runtime variant
+                    hair_sprobj = store.mas_sprites.get_sprite(1, json_data["name"])
+                    if hair_sprobj:
+                        hair_sprobj.ex_props.update(added_ex_props)
+
+                with open("{0}/{1}{2}".format(renpy.config.gamedir, JSON_PATH, json_filename), "w") as jfile:
+                    #Now write the new json
+                    json.dump(json_data, jfile, indent=4, sort_keys=True)
+
 
     def __compatibleOnly(hair_list):
         """
@@ -276,6 +355,7 @@ label monika_sethair_ponytail:
             m 1eua "Give me a second, [player]."
             m 3eua "I'm just getting myself ready for the day.{w=0.5}.{w=0.5}.{nw}"
 
+    window hide
     call mas_transition_to_emptydesk
 
     python:
@@ -302,6 +382,7 @@ label monika_sethair_ponytail:
         persistent._ahc_last_set_hair["day"] = datetime.datetime.now()
 
     call mas_transition_from_emptydesk("monika 3hub")
+    window auto
 
     if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 3hub "All done!{w=1}{nw}"
@@ -358,6 +439,7 @@ label monika_sethair_down:
         else:
             m 1eua "Give me a moment [player], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
 
+    window hide
     call mas_transition_to_emptydesk
 
     python:
@@ -386,6 +468,7 @@ label monika_sethair_down:
         persistent._ahc_last_set_hair["night"] = datetime.datetime.now()
 
     call mas_transition_from_emptydesk("monika 1eua")
+    window auto
 
     if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 1eua "That feels better.{w=1}{nw}"
