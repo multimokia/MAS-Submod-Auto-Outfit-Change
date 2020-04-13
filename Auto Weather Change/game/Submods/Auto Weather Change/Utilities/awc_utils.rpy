@@ -7,8 +7,18 @@ init -990 python in mas_submod_utils:
         settings_pane="auto_atmos_change_settings"
     )
 
+init -1 python:
+    tt_awc_desc = (
+        "Enable this to allow {i}progressive{/i} weather to automatically match the weather at your location."
+    )
+
+    tt_ast_desc = (
+        "Enable this to allow the sunrise and sunset times in MAS to match your location."
+    )
+
 #Our settings + Status pane
 screen auto_atmos_change_settings():
+    $ submods_screen_tt = store.renpy.get_screen("submods", "screens").scope["tooltip"]
     vbox:
         box_wrap False
         xfill True
@@ -21,10 +31,14 @@ screen auto_atmos_change_settings():
                 textbutton _("Auto Weather Change"):
                     action ToggleField(persistent, "_awc_enabled")
                     selected persistent._awc_enabled
+                    hovered SetField(submods_screen_tt, "value", tt_awc_desc)
+                    unhovered SetField(submods_screen_tt, "value", submods_screen_tt.default)
 
                 textbutton _("Auto Sun Times"):
                     action Function(store.awc_utils.toggleAST)
                     selected persistent._awc_ast_enabled
+                    hovered SetField(submods_screen_tt, "value", tt_ast_desc)
+                    unhovered SetField(submods_screen_tt, "value", submods_screen_tt.default)
 
             else:
                 text "Please add a valid API key to use this submod.": #You can create one {a=https://openweathermap.org/api}{i}{u}here{/u}{/i}{/a}.":
