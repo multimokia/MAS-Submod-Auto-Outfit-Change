@@ -6,7 +6,7 @@ init -990 python in mas_submod_utils:
             "This submod allows Monika to play a song for spending time with her in the evenings.\n"
             "Compatible with {a=https://github.com/Booplicate/MAS-Submods-YouTubeMusic/releases/latest}{i}{u}Youtube Music{/u}{/i}{/a}."
         ),
-        version="2.1.1",
+        version="2.1.2",
         settings_pane="nightmusic_settings"
     )
 
@@ -22,7 +22,7 @@ screen nightmusic_settings():
             box_wrap False
             $ curr_song = nm_utils.getPlayingSong()
             if curr_song:
-                text "Current song: {0}".format(nm_utils.getPlayingSong().replace('[', "[["))
+                text "Current song: {0}".format(nm_utils.getPlayingSong().replace('[', "[[").replace('{', "{{"))
 
 #Default this var so it works
 default persistent._music_playlist_mode = False
@@ -290,7 +290,12 @@ init python in nm_utils:
         OUT:
             string representing filename (plus extension)
         """
-        return filepath[filepath.rindex("/"):].replace("/","")
+        try:
+            fp = filepath[filepath.rindex("/"):].replace("/","")
+        except:
+            fp = filepath
+
+        return fp
 
     def modeChange():
         """
