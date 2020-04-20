@@ -18,7 +18,7 @@ screen nightmusic_settings():
         xmaximum 1000
 
         hbox:
-            style_prefix mas_ui.cbx_style_prefix
+            style_prefix "check"
             box_wrap False
             $ curr_song = nm_utils.getPlayingSong()
             if curr_song:
@@ -723,7 +723,7 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
                 textbutton _(name) action Return(song)
 
             vbox:
-                style_prefix mas_ui.cbx_style_prefix
+                style_prefix "check"
                 textbutton _("Playlist Mode"):
                     action [ToggleField(persistent, "_music_playlist_mode"), Function(nm_utils.modeChange)]
                     selected persistent._music_playlist_mode
