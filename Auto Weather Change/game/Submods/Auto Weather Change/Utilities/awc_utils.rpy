@@ -26,7 +26,7 @@ screen auto_atmos_change_settings():
 
         hbox:
             if bool(persistent._awc_API_key):
-                style_prefix mas_ui.cbx_style_prefix
+                style_prefix "check"
                 box_wrap False
                 textbutton _("Auto Weather Change"):
                     action ToggleField(persistent, "_awc_enabled")
@@ -43,13 +43,13 @@ screen auto_atmos_change_settings():
             else:
                 text "Please add a valid API key to use this submod.": #You can create one {a=https://openweathermap.org/api}{i}{u}here{/u}{/i}{/a}.":
                     xalign 1.0 yalign 0.0
-                    style mas_ui.mm_tt_style
+                    style "main_menu_version"
 
     if bool(persistent._awc_API_key):
         text "API Key Valid":
             xalign 1.0 yalign 0.0
             xoffset -10
-            style mas_ui.mm_tt_style
+            style "main_menu_version"
 
 #The api key we'll use to access Open Weather Network's data
 default persistent._awc_API_key = None
