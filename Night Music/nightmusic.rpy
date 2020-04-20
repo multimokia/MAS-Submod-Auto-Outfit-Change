@@ -587,60 +587,6 @@ init 1 python:
 # This is the music selection menu
 ###############################################################################
 
-# here we are copying game_menu's layout
-
-#style music_menu_outer_frame is empty
-#style music_menu_navigation_frame is empty
-#style music_menu_content_frame is empty
-#style music_menu_viewport is gui_viewport
-#style music_menu_side is gui_side
-#style music_menu_scrollbar is gui_vscrollbar
-
-#style music_menu_label is gui_label
-#style music_menu_label_text is gui_label_text
-
-#style music_menu_return_button is navigation_button
-style music_menu_return_button_text is navigation_button_text
-style music_menu_prev_button_text is navigation_button_text:
-    min_width 135
-    text_align 1.0
-
-style music_menu_outer_frame is game_menu_outer_frame
-style music_menu_navigation_frame is game_menu_navigation_frame
-style music_menu_content_frame is game_menu_content_frame
-style music_menu_viewport is game_menu_viewport
-style music_menu_side is game_menu_side
-style music_menu_label is game_menu_label
-style music_menu_label_text is game_menu_label_text
-
-style music_menu_return_button is return_button:
-    xminimum 0
-    xmaximum 200
-    xfill False
-
-style music_menu_prev_button is return_button:
-    xminimum 0
-    xmaximum 135
-    xfill False
-
-style music_menu_outer_frame:
-    background "mod_assets/music_menu.png"
-
-style music_menu_button is navigation_button:
-    size_group "navigation"
-    properties gui.button_properties("navigation_button")
-    hover_sound gui.hover_sound
-    activate_sound gui.activate_sound
-
-style music_menu_button_text is navigation_button_text:
-    properties gui.button_text_properties("navigation_button")
-    font "mod_assets/font/mplus-2p-regular.ttf"
-    color "#fff"
-    outlines [(4, "#b59", 0, 0), (2, "#b59", 2, 2)]
-    hover_outlines [(4, "#fac", 0, 0), (2, "#fac", 2, 2)]
-    insensitive_outlines [(4, "#fce", 0, 0), (2, "#fce", 2, 2)]
-
-
 # Music menu 
 #
 # IN:
@@ -679,40 +625,40 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
 
     zorder 200
 
-    style_prefix mas_ui.mms_style_prefix
+    style_prefix "music_menu"
 
     frame:
         hbox:
             # dynamic prevous text, so we can keep button size alignments
             if page_num > 0:
                 textbutton _("<<<< Prev"):
-                    style mas_ui.mms_button_prev_style
+                    style "music_menu_prev_button"
                     action Return(page_num - 1)
 
             else:
-                textbutton _( " "):
-                    style mas_ui.mms_button_prev_style
+                textbutton _(" "):
+                    style "music_menu_prev_button"
                     sensitive False
 
             if more_pages:
                 textbutton _("Next >>>>"):
-                    style mas_ui.mms_button_return_style
+                    style "music_menu_return_button"
                     action Return(page_num + 1)
-        style mas_ui.mms_frame_outer_style
+
+        style "music_menu_outer_frame"
 
         hbox:
+            frame:
+                style "music_menu_outer_frame"
 
             frame:
-                style mas_ui.mms_frame_navigation_style
-
-            frame:
-                style mas_ui.mms_frame_content_style
+                style "music_menu_content_frame"
 
                 transclude
 
         # this part copied from navigation menu
         vbox:
-            style_prefix mas_ui.mms_style_prefix
+            style_prefix "music_menu"
 
             xpos gui.navigation_xpos
     #        yalign 0.4
@@ -732,11 +678,11 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
         yalign 1.0
 
         textbutton _(songs.NO_SONG):
-            style mas_ui.mms_button_return_style
+            style "music_menu_return_button"
             action Return(songs.NO_SONG)
 
         textbutton _("Return"):
-            style mas_ui.mms_button_return_style
+            style "music_menu_return_button"
             if (
                 store.songs.current_track == store.songs.FP_NIGHTMUSIC
                 or store.songs.current_track and "nightmusic" in store.songs.current_track
