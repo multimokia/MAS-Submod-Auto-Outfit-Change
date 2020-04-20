@@ -24,7 +24,7 @@ screen auto_hair_change_settings_screen():
         xmaximum 1000
 
         hbox:
-            style_prefix mas_ui.cbx_style_prefix
+            style_prefix "check"
             box_wrap False
 
             textbutton _("Update Jsons"):
