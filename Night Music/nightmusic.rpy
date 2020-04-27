@@ -649,7 +649,7 @@ screen music_menu_ov(music_page, page_num=0, more_pages=False):
 
         hbox:
             frame:
-                style "music_menu_outer_frame"
+                style "music_menu_navigation_frame"
 
             frame:
                 style "music_menu_content_frame"
