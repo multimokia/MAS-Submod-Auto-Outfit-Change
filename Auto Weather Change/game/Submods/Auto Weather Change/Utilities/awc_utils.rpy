@@ -838,10 +838,11 @@ init -19 python:
                 #Do we need to change weather?
                 if new_weather != store.mas_current_weather:
                     #Let's see if we need to scene change
-                    store.mas_weather.should_scene_change = store.mas_current_background.isChangingRoom(
-                        store.mas_current_weather,
-                        new_weather
-                    )
+                    if store.mas_current_background.isChangingRoom(
+                            store.mas_current_weather,
+                            store.mas_weather
+                    ):
+                        store.mas_idle_mailbox.send_scene_change()
 
                     #Now we change weather
                     store.mas_changeWeather(new_weather)
@@ -865,10 +866,11 @@ init -19 python:
 
                     if new_weather is not None and new_weather != store.mas_current_weather:
                         #Let's see if we need to scene change
-                        store.mas_weather.should_scene_change = store.mas_current_background.isChangingRoom(
-                            store.mas_current_weather,
-                            new_weather
-                        )
+                        if store.mas_current_background.isChangingRoom(
+                                store.mas_current_weather,
+                                new_weather
+                        ):
+                            store.mas_idle_mailbox.send_scene_change()
 
                         #Now we change weather
                         store.mas_changeWeather(new_weather)
@@ -880,10 +882,11 @@ init -19 python:
 
                     elif store.mas_current_weather != store.mas_weather_def:
                         #Let's see if we need to scene change
-                        store.mas_weather.should_scene_change = store.mas_current_background.isChangingRoom(
-                            store.mas_current_weather,
-                            store.mas_weather_def
-                        )
+                        if store.mas_current_background.isChangingRoom(
+                                store.mas_current_weather,
+                                store.mas_weather_def
+                        ):
+                            store.mas_idle_mailbox.send_scene_change()
 
                         store.mas_changeWeather(store.mas_weather_def)
                         return True
