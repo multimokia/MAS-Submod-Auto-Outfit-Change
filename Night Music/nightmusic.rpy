@@ -36,7 +36,7 @@ init 50 python:
     #Reset ev
     home_ev = mas_getEV('monika_welcome_home')
     home_ev.conditional=(
-        "not mas_isMorning() "
+        "not mas_isDayNow() "
         "and not persistent.current_track"
     )
     home_ev.action=EV_ACT_QUEUE
@@ -50,7 +50,7 @@ init 5 python:
             persistent.event_database,
             eventlabel="monika_welcome_home",
             conditional=(
-                "not mas_isMorning() "
+                "not mas_isDayNow() "
                 "and not persistent.current_track"
             ),
             action=EV_ACT_QUEUE,
@@ -61,7 +61,7 @@ init 5 python:
 
 label monika_welcome_home:
     #Sanity check this since for whatever reason this conditional runs anyway.
-    if not mas_isMorning() or persistent.current_track:
+    if not mas_isDayNow() or persistent.current_track:
         #Firstly, we pick a song (or songs)
         if persistent._music_playlist_mode:
             $ song = nm_utils.getSongs(nm_utils.nightMusicStation, with_filepaths=True)
@@ -91,7 +91,7 @@ label monika_welcome_home:
         #Reset ev if not night
         $ home_ev = mas_getEV('monika_welcome_home')
         $ home_ev.conditional=(
-            "not mas_isMorning() "
+            "not mas_isDayNow() "
             "and not persistent.current_track"
         )
         $ home_ev.action=EV_ACT_QUEUE
@@ -587,7 +587,7 @@ init 1 python:
 # This is the music selection menu
 ###############################################################################
 
-# Music menu 
+# Music menu
 #
 # IN:
 #   music_page - current page of music
