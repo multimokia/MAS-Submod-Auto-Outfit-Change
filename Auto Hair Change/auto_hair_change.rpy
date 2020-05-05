@@ -3,7 +3,7 @@ init -990 python in mas_submod_utils:
         author="multimokia",
         name="Auto Hair Change",
         description="A submod which allows Monika to pick her own hairstyles for day and night.",
-        version="2.3.2",
+        version="2.3.3",
         version_updates={
             "multimokia_auto_hair_change_v2_3_0": "multimokia_auto_hair_change_v2_3_1"
         },
