@@ -116,56 +116,6 @@ init -900 python in lcl_utils:
         else:
             who(what, interact=interact)
 
-    def menu_override(items, set_expr):
-        """
-        :undocumented:
-
-        Displays a menu, and returns to the user the value of the selected
-        choice. Also handles conditions and the menuset.
-        """
-
-        if renpy.config.old_substitutions:
-            def substitute(s):
-                return s % renpy.tag_quoting_dict
-        else:
-            def substitute(s):
-                return s
-
-        # Filter the list of items to only include ones for which the
-        # condition is true.
-        items = [ (parseStr(substitute(label)), value)
-                for label, condition, value in items
-                if renpy.python.py_eval(condition) ]
-
-        # Filter the list of items on the set_expr:
-        if set_expr:
-            set = renpy.python.py_eval(set_expr)  # @ReservedAssignment
-            items = [ (label, value)
-                    for label, value in items
-                    if label not in set ]
-        else:
-            set = None  # @ReservedAssignment
-
-        # Check to see if there's at least one choice in set of items:
-        choices = [ value for label, value in items if value is not None ]
-
-        # If not, bail out.
-        if not choices:
-            return None
-
-        # Show the menu.
-        rv = renpy.store.menu(items)
-
-        # If we have a set, fill it in with the label of the chosen item.
-        if set is not None and rv is not None:
-            for label, value in items:
-                if value == rv:
-                    try:
-                        set.append(label)
-                    except AttributeError:
-                        set.add(label)
-        return rv
-
     def text_init_override(
         self,
         text,
