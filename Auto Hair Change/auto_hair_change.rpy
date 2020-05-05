@@ -321,7 +321,7 @@ init 5 python:
             persistent.event_database,
             eventlabel="monika_sethair_ponytail",
             conditional=(
-                "mas_isMorning() "
+                "mas_isDayNow() "
                 "and not store.persistent._mas_force_hair "
                 "and ((len(store.ahc_utils.getDayHair()) > 1 "
                 "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
@@ -391,7 +391,7 @@ label monika_sethair_ponytail:
         hairup_ev = mas_getEV("monika_sethair_ponytail")
 
         hairup_ev.conditional=(
-            "mas_isMorning() "
+            "mas_isDayNow() "
             "and not store.persistent._mas_force_hair "
             "and ((len(store.ahc_utils.getDayHair()) > 1 "
             "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
@@ -408,7 +408,7 @@ init 5 python:
             persistent.event_database,
             eventlabel="monika_sethair_down",
             conditional=(
-                "not mas_isMorning() "
+                "not mas_isDayNow() "
                 "and not store.persistent._mas_force_hair "
                 "and ((len(store.ahc_utils.getNightHair()) > 1 "
                 "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
@@ -485,7 +485,7 @@ label monika_sethair_down:
         hairdown_ev = mas_getEV("monika_sethair_down")
 
         hairdown_ev.conditional=(
-            "not mas_isMorning() "
+            "not mas_isDayNow() "
             "and not store.persistent._mas_force_hair "
             "and ((len(store.ahc_utils.getNightHair()) > 1 "
             "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
