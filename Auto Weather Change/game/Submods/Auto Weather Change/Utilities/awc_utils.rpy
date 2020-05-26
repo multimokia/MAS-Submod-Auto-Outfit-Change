@@ -840,7 +840,7 @@ init -19 python:
                     #Let's see if we need to scene change
                     if store.mas_current_background.isChangingRoom(
                             store.mas_current_weather,
-                            store.mas_weather
+                            new_weather
                     ):
                         store.mas_idle_mailbox.send_scene_change()
 
