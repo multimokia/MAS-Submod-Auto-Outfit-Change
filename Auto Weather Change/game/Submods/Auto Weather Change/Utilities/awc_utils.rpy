@@ -124,17 +124,17 @@ init -21 python:
             return e.code
         except urllib2.URLError:
             return False
+        except Exception:
+            return False
 
     def awc_testConnection():
         """
         Checks if we have internet connection
 
         OUT:
-            True if successful, False otherwise
+            True if connection was successful, False otherwise
         """
-        if not awc_testURL("http://www.google.com"):
-            return False
-        return True
+        return bool(awc_testURL("http://www.google.com"))
 
     def awc_isInvalidAPIKey(api_key):
         """
