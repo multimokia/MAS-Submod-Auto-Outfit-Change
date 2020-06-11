@@ -98,7 +98,8 @@ label awc_monika_player_location_end:
     m 1ekbfa "Thanks for helping me feel closer to your reality."
 
     #Force a weather check
-    $ awc_globals.weather_check_time -= datetime.timedelta(minutes=5)
+    if awc_globals.weather_check_time is not None:
+        $ awc_globals.weather_check_time -= datetime.timedelta(minutes=5)
     return
 
 label awc_monika_player_location_uncomfortable:
