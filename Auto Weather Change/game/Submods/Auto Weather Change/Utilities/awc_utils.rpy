@@ -175,7 +175,7 @@ init -20 python in awc_globals:
     #First append sys path here
     import sys
     import store
-    sys.path.append(renpy.config.gamedir + '\\python-packages\\pyowm-2.8.0-py2.7.egg')
+    sys.path.append(renpy.config.gamedir + "/python-packages/pyowm-2.8.0-py2.7.egg")
 
     #Let's get our weather bit
     from pyowm import OWM
