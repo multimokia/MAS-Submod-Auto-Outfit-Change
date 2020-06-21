@@ -27,6 +27,54 @@ screen nightmusic_settings():
 #Default this var so it works
 default persistent._music_playlist_mode = False
 
+python early:
+    def nm_load(name):
+        if renpy.config.reject_backslash and "\\" in name:
+            raise Exception("Backslash in filename, use '/' instead: %r" % name)
+
+        name = renpy.re.sub(r'/+', '/', name)
+
+        for p in renpy.loader.get_prefixes():
+            rv = renpy.loader.load_core(p + name)
+            if rv is not None:
+                return rv
+
+        raise IOError("Couldn't find file '%s'." % name)
+
+    def nm_transfn(name):
+        """
+        Tries to translate the name to a file that exists in one of the
+        searched directories.
+        """
+
+        if renpy.config.reject_backslash and "\\" in name:
+            raise Exception("Backslash in filename, use '/' instead: %r" % name)
+
+        name = renpy.loader.lower_map.get(name.lower(), name)
+
+        if isinstance(name, str):
+            name = name.decode("utf-8")
+
+        for d in renpy.config.searchpath:
+            fn = os.path.join(renpy.config.basedir, d, name)
+
+            renpy.loader.add_auto(fn)
+
+            if os.path.exists(fn):
+                return fn
+
+        raise Exception("Couldn't find file '%s'." % name)
+
+    def nm_loadable(name):
+        for p in renpy.loader.get_prefixes():
+            if renpy.loader.loadable_core(p + name):
+                return True
+        return False
+
+    renpy.loader.load = nm_load
+    renpy.loader.transfn = nm_transfn
+    renpy.loader.loadable = nm_loadable
+
 #Add the label into the restart blacklist
 init 1 python:
     evhand.RESTART_BLKLST.append('monika_welcome_home')
