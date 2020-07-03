@@ -3,7 +3,7 @@ init -990 python in mas_submod_utils:
         author="multimokia",
         name="English Localization",
         description="Allows Monika to use different English language rules",
-        version="1.0.0",
+        version="1.0.1",
         settings_pane="english_localization_settings"
     )
 
@@ -204,6 +204,12 @@ init -900 python in lcl_utils:
         global WORD_REPLACE_LOOKUP
         import re
 
+        #Need to handle text objects specially
+        text_obj = None
+        if isinstance(dlg_line, renpy.text.text.Text):
+            text_obj = dlg_line
+            dlg_line = dlg_line.text[0]
+
         #First, split the line into individual components
         split_line = re.split(
             r"([\s.,;:*!?\-]*\{[^}]+\}[\s.,;:*!?\-]*|\[.+\]|\s*[.,;:*!?\-~]+\s*|^[^[]\s\.,!\?}]+\w+\d+$[^[]\s\.,!\?}]+|\s+)",
@@ -233,6 +239,12 @@ init -900 python in lcl_utils:
             #Now concatenate the strings to form the new dialogue line
             new_line += word
 
+        #Now, if this was a text object, we should return that instead since it has custom formatting
+        if text_obj is not None:
+            text_obj.text = [new_line]
+            return text_obj
+
+        #Otherwise, just return the line itself
         return new_line
 
     @store.mas_submod_utils.functionplugin("ch30_reset")
