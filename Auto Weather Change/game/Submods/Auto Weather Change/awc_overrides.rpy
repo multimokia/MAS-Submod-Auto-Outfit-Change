@@ -110,18 +110,13 @@ init -19 python in mas_weather:
 
 #START: Renpy overrides
 python early:
-    def awc_load(name, tl=True):
-
-        if renpy.display.predict.predicting:  # @UndefinedVariable
-            if threading.current_thread().name == "MainThread":
-                raise Exception("Refusing to open {} while predicting.".format(name))
-
+    def awc_load(name):
         if renpy.config.reject_backslash and "\\" in name:
             raise Exception("Backslash in filename, use '/' instead: %r" % name)
 
         name = renpy.re.sub(r'/+', '/', name)
 
-        for p in renpy.loader.get_prefixes(tl):
+        for p in renpy.loader.get_prefixes():
             rv = renpy.loader.load_core(p + name)
             if rv is not None:
                 return rv
@@ -153,10 +148,6 @@ python early:
         raise Exception("Couldn't find file '%s'." % name)
 
     def awc_loadable(name):
-
-        if (renpy.config.loadable_callback is not None) and renpy.config.loadable_callback(name):
-            return True
-
         for p in renpy.loader.get_prefixes():
             if renpy.loader.loadable_core(p + name):
                 return True
