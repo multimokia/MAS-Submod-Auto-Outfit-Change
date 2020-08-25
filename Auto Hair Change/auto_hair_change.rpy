@@ -1,14 +1,27 @@
 init -990 python in mas_submod_utils:
-    Submod(
-        author="multimokia",
+    ahc_submod = Submod(
+        author="multimokia", #And Legendkiller21 (Don't want to break update scripts)
         name="Auto Hair Change",
         description="A submod which allows Monika to pick her own hairstyles for day and night.",
-        version="2.3.3",
+        version="3.0.0",
         version_updates={
             "multimokia_auto_hair_change_v2_3_0": "multimokia_auto_hair_change_v2_3_1"
         },
         settings_pane="auto_hair_change_settings_screen"
     )
+
+init -989 python in ahc_utils:
+    import store
+
+    #Register the updater if needed
+    if store.mas_submod_utils.isSubmodInstalled("Submod Updater Plugin"):
+        store.sup_utils.SubmodUpdater(
+            submod=store.mas_submod_utils.nm_submod,
+            user_name="multimokia",
+            repository_name="MAS-Submod-Auto-Outfit-Change",
+            tag_formatter=lambda x: x[x.index('_') + 1:],
+            attachment_id=None,
+        )
 
 init -1 python:
     tt_when_to_update = (
@@ -37,24 +50,58 @@ label multimokia_auto_hair_change_v2_3_0(version="v2_3_0"):
     return
 
 label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
-    $ ahc_utils.__updateJsons()
+    python:
+        ahc_utils.__updateJsons()
+
+        hairdown_ev = mas_getEV("monika_sethair_down")
+
+        if hairdown_ev:
+            correct_conditional=(
+                    "mas_isNightNow() "
+                    "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
+                    "and (not store.ahc_utils.hasHairDownRun() "
+                    "or (store.mas_globals.returned_home_this_sesh "
+                    "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
+                )
+
+            if hairdown_ev.conditional != correct_conditional:
+                hairdown_ev.conditional = correct_conditional
+
+            if hairdown_ev.action != EV_ACT_PUSH:
+                hairdown_ev.action = EV_ACT_PUSH
+
+        hairponytail_ev = mas_getEV("monika_sethair_ponytail")
+
+        if hairponytail_ev:
+            correct_conditional=(
+                    "mas_isDayNow() "
+                    "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
+                    "and not store.ahc_utils.hasHairPonytailRun() "
+                )
+
+            if hairponytail_ev.conditional != correct_conditional:
+                hairponytail_ev.conditional = correct_conditional
+
+            if hairponytail_ev.action != EV_ACT_PUSH:
+                hairponytail_ev.action = EV_ACT_PUSH
+
     return
 
-default persistent._ahc_last_set_hair = {
-    "day": None,
-    "night": None
-}
-
-#Fix for the removal of Rin
-init python:
-    mas_clothes_rin = None
-
 init python in ahc_utils:
-    import store
+    import random
     import datetime
 
-    #Reset force hair, so we can have Moni set her own hair next sesh
+    #Reset force hair and outfit, so we can have Moni set her own next sesh
     store.persistent._mas_force_hair = False
+    store.persistent._mas_force_clothes = False
+
+    #CONSTS
+    #NOTE: This is managed in terms of Celsius
+    #TODO: Change these to work on live adjustment. Will be an AAC change to provide the utils to do this
+    TEMP_WARM_MIN = 21
+
+    TEMP_COOL_MAX = 20
+    TEMP_COOL_MIN = 10
 
     __BUILTIN_DAY_HAIR = [
         store.mas_hair_def,
@@ -66,6 +113,48 @@ init python in ahc_utils:
         store.mas_hair_downtiedstrand
     ]
 
+    __BUILTIN_DOWN_HAIR = [
+        store.mas_hair_down,
+        store.mas_hair_downtiedstrand
+    ]
+
+    __BUILTIN_HOME_CLOTHES = [
+        store.mas_clothes_sundress_white
+    ]
+
+    __BUILTIN_DATE_CLOTHES = [
+        store.mas_clothes_sundress_white
+    ]
+
+    __BUILTIN_FORMAL_CLOTHES = [
+        store.mas_clothes_dress_newyears,
+        store.mas_clothes_blackdress
+    ]
+
+    __BUILTIN_LIGHT_BRACELET_CLOTHES = [
+        store.mas_clothes_sundress_white,
+        store.mas_clothes_dress_newyears
+    ]
+
+    __BUILTIN_DARK_BRACELET_CLOTHES = [
+        store.mas_clothes_blackdress
+    ]
+
+    #filename: {ex_prop: value}
+    json_update_map = {
+        "orcaramelo_hair_bunbraid.json": {"day": True},
+        "orcaramelo_hair_ponytailbraid.json": {"day": True},
+        "orcaramelo_hair_twintails.json": {"day": True},
+        "orcaramelo_hair_twinbun.json": {"day": True},
+        "orcaramelo_hair_usagi.json": {"day": True},
+        "orcaramelo_hair_bundown.json": {"day": True},
+        "mas_hair_bun.json": {"day": True},
+        "orcaramelo_clothes_sweater_shoulderless.json": {"sweater": True, "dark bracelet": True},
+        "finale_clothes_jacket_brown.json": {"jacket": True},
+        "velius94_clothes_dress_whitenavyblue.json": {"home": True, "light bracelet": True, "dark bracelet": True},
+        #TODO: add green hoodie
+    }
+
     def __updateJsons():
         """
         Updates the jsons to add ex_props for this submod
@@ -74,15 +163,6 @@ init python in ahc_utils:
         import json
 
         JSON_PATH = "mod_assets/monika/j/"
-
-        #filename: {ex_prop: value}
-        json_update_map = {
-            "orcaramelo_hair_bunbraid.json": {"day": True},
-            "orcaramelo_hair_ponytailbraid.json": {"day": True},
-            "orcaramelo_hair_twintails.json": {"day": True},
-            "orcaramelo_hair_twinbun.json": {"day": True},
-            "orcaramelo_hair_usagi.json": {"day": True}
-        }
 
         for json_filename, added_ex_props in json_update_map.iteritems():
             if renpy.loadable(JSON_PATH + json_filename):
@@ -116,7 +196,6 @@ init python in ahc_utils:
 
         OUT:
             list() of MASHair objects which are compatible with the current outfit
-
         NOTE: Does NOT check if unlocked
         """
         return [
@@ -128,7 +207,6 @@ init python in ahc_utils:
     def getDayHair():
         """
         Gets day hair
-
         OUT:
             list() of unlocked MASHair objects which are suited for day and are compatible with the current clothes
         """
@@ -160,7 +238,6 @@ init python in ahc_utils:
     def isWearingDayHair():
         """
         Checks if Monika is wearing day hair
-
         OUT:
             boolean:
                 True if Monika is wearing day hair
@@ -176,7 +253,6 @@ init python in ahc_utils:
     def isWearingNightHair():
         """
         Checks if Monika is wearing night hair
-
         OUT:
             boolean:
                 True if Monika is wearing night hair
@@ -189,16 +265,394 @@ init python in ahc_utils:
             or store.monika_chr.hair in __BUILTIN_NIGHT_HAIR
         )
 
+    def isWearingDownHair():
+        """
+        Checks if Monika is wearing down hair
+
+        OUT:
+            boolean:
+                True if Monika is wearing down hair
+                False otherwise
+        """
+        global __BUILTIN_DOWN_HAIR
+
+        return (
+            "down" in store.monika_chr.hair.ex_props
+            or store.monika_chr.hair in __BUILTIN_DOWN_HAIR
+        )
+
     def has_and_unlocked(acs_name):
         """
         Returns True if we have the acs and it's unlocked
         """
         return acs_name in store.mas_selspr.ACS_SEL_MAP and store.mas_selspr.ACS_SEL_MAP[acs_name].unlocked
 
+    def outfit_has_and_unlocked(outfit_name):
+        """
+        Returns True if we have the outfit and it's unlocked
+        """
+        return outfit_name in store.mas_selspr.CLOTH_SEL_MAP and store.mas_selspr.CLOTH_SEL_MAP[outfit_name].unlocked
+
+    def getRandOutfitOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A random unlocked cloth of a specific exprop
+        """
+
+        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
+
+        exprops_map = {
+            "home": __BUILTIN_HOME_CLOTHES,
+            "date": __BUILTIN_DATE_CLOTHES,
+            "formal": __BUILTIN_FORMAL_CLOTHES,
+            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
+            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+        }
+
+        clothes_pool = []
+
+        clothes_with_exprop = store.MASClothes.by_exprop(exprop, value)
+
+        for clothes in clothes_with_exprop:
+            if store.mas_SELisUnlocked(clothes):
+                clothes_pool.append(clothes)
+
+        if exprop in exprops_map:
+            for clothes in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(clothes):
+                    clothes_pool.append(clothes)
+
+        if len(clothes_pool) < 1:
+            return None
+
+        elif len(clothes_pool) < 2:
+            return clothes_pool[0]
+
+        else:
+            return random.choice(clothes_pool)
+
+    def getOutfitsOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A list of unlocked clothes of a specific exprop
+        """
+
+        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
+
+        exprops_map = {
+            "home": __BUILTIN_HOME_CLOTHES,
+            "date": __BUILTIN_DATE_CLOTHES,
+            "formal": __BUILTIN_FORMAL_CLOTHES,
+            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
+            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+        }
+
+        clothes_pool = []
+
+        clothes_with_exprop = store.MASClothes.by_exprop(exprop, value)
+
+        for clothes in clothes_with_exprop:
+            if store.mas_SELisUnlocked(clothes):
+                clothes_pool.append(clothes)
+
+        if exprop in exprops_map:
+            for clothes in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(clothes):
+                    clothes_pool.append(clothes)
+
+        if len(clothes_pool) < 1:
+            return None
+
+        elif len(clothes_pool) < 2:
+            return clothes_pool[0]
+
+        else:
+            return clothes_pool
+
+    def hasUnlockedClothesOfExprop(exprop, value=None):
+        """
+        Checks if we have unlocked clothes with a specific exprop
+
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            boolean:
+                True if we have unlocked clothes with the exprop + value provided
+                False otherwise
+        """
+
+        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
+
+        exprops_map = {
+            "home": __BUILTIN_HOME_CLOTHES,
+            "date": __BUILTIN_DATE_CLOTHES,
+            "formal": __BUILTIN_FORMAL_CLOTHES,
+            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
+            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+        }
+
+        for clothes in store.MASClothes.by_exprop(exprop, value):
+            if store.mas_SELisUnlocked(clothes):
+                return True
+
+        if exprop in exprops_map:
+            for clothes in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(clothes):
+                    return True
+
+        return False
+
+init 1 python in ahc_utils:
+    def shouldChangeBracelet():
+        """
+        Checks whether the current bracelet matches the current outfit and wears the right bracelet if not
+        """
+
+        _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
+
+        if not _current_bracelet:
+            return
+
+        if (
+            isWearingClothesOfExprop("light bracelet")
+            and isWearingClothesOfExprop("dark bracelet")
+            and (_current_bracelet.name == "flower_bracelet_dark" or _current_bracelet.name == "flower_bracelet_light")
+        ):
+            if (
+                _current_bracelet.name == "flower_bracelet_dark"
+                and has_and_unlocked("flower_bracelet_light")
+                and renpy.random.randint(1,5) == 1
+            ):
+                store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
+
+            elif (
+                _current_bracelet.name == "flower_bracelet_light"
+                and has_and_unlocked("flower_bracelet_dark")
+                and renpy.random.randint(1,5) == 1
+            ):
+                store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
+
+        elif isWearingClothesOfExprop("light bracelet") and _current_bracelet.name == "flower_bracelet_dark" and has_and_unlocked("flower_bracelet_light"):
+            store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
+        elif isWearingClothesOfExprop("dark bracelet") and _current_bracelet.name == "flower_bracelet_light" and has_and_unlocked("flower_bracelet_dark"):
+            store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
+
+        return
+
+    def isWearingClothesOfExprop(exprop):
+        """
+        Checks is Monika is wearing an outfit of the provided exprop
+        """
+
+        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
+
+        exprops_map = {
+            "home": __BUILTIN_HOME_CLOTHES,
+            "date": __BUILTIN_DATE_CLOTHES,
+            "formal": __BUILTIN_FORMAL_CLOTHES,
+            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
+            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+        }
+
+        if exprop in exprops_map:
+            return (
+                exprop in store.monika_chr.clothes.ex_props
+                or store.monika_chr.clothes in exprops_map[exprop]
+            )
+        else:
+            return exprop in store.monika_chr.clothes.ex_props
+
+init 2 python in ahc_utils:
+
+    def changeClothesOfExprop(exprop, chance=True):
+        """
+        Chooses and wears an outfit of the provided exprop
+
+        IN:
+            exprop - exprop to choose an outfit from
+            chance - Monika has a 66.66% (repeating of course) chance (2/3) to chance clothes if she already wears an outfit of the provided exprop
+                Set it to False in order to ignore that chance and always change clothes (Default: True)
+        """
+
+        if not exprop or not hasUnlockedClothesOfExprop(exprop):
+            return
+
+        # We assign a random value, other than 1, to this. This way, if chance is False, we're guarenteed to
+        # get in the elif block
+        _random_chance = 2
+
+        # Define this here so that we don't crash if we don't get in the below if/elif block
+        _new_clothes = None
+
+        if chance:
+            _random_chance = renpy.random.randint(1,3)
+
+        if not isWearingClothesOfExprop(exprop):
+            _new_clothes = getRandOutfitOfExprop(exprop).name
+
+        elif (
+            isWearingClothesOfExprop(exprop)
+            and len(getOutfitsOfExprop(exprop)) > 1
+            and _random_chance != 1
+        ):
+            _clothes_list = getOutfitsOfExprop(exprop)
+            _clothes_list.remove(store.monika_chr.clothes)
+            _new_clothes = renpy.random.choice(_clothes_list).name
+
+        if _new_clothes:
+            store.mas_sprites._outfit_wear_if_gifted(store.monika_chr, _new_clothes)
+
+        return
+
+init 999 python in ahc_utils:
+
+    @store.mas_submod_utils.functionplugin("mas_dockstat_generic_rtg")
+    def getReady():
+        """
+        Gets Monika ready for a date
+        """
+        #Make hair is either what player asked, or Moni's choice
+        if (
+            not store.persistent._mas_force_hair
+            and not (
+                store.monika_chr.is_wearing_clothes_with_exprop("costume")
+                and persistent._mas_setting_ocb
+            )
+            and not isWearingDayHair()
+        ):
+            store.monika_chr.change_hair(renpy.random.choice(getDayHair()), by_user=False)
+
+        #We'll wear a ribbon if it's a special day and we're able to force
+        if (
+            store.mas_isSpecialDay()
+            and (isWearingDayHair() and not isWearingDownHair())
+            and not store.monika_chr.is_wearing_ribbon()
+        ):
+            if (
+                has_and_unlocked("multimokia_bow_black")
+                and not store.monika_chr.is_wearing_hair_with_exprop("twintails")
+            ):
+                store.mas_sprites._acs_wear_if_found(store.monika_chr, "multimokia_bow_black")
+
+            elif has_and_unlocked("ribbon_black"):
+                store.monika_chr.wear_acs(store.mas_acs_ribbon_black)
+
+            else:
+                store.monika_chr.wear_acs(store.mas_acs_ribbon_def)
+
+        #Moni changes her clothes depending on certain conditions or wears what the player asked
+        if not store.persistent._mas_force_clothes:
+            _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
+
+            if store.mas_isSpecialDay():
+                changeClothesOfExprop("formal")
+                shouldChangeBracelet()
+
+            #We need to verify that auto atmos change is installed before accessing its code
+            elif store.mas_isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
+                min_temp = store.awc_getTemperature(temp="temp_min")
+
+                if min_temp < TEMP_COOL_MIN:
+                    changeClothesOfExprop("jacket")
+                    if _current_bracelet:
+                        store.monika_chr.remove_acs(_current_bracelet)
+
+                elif TEMP_COOL_MIN <= min_temp <= TEMP_COOL_MAX:
+                    changeClothesOfExprop("sweater")
+                    shouldChangeBracelet()
+
+                else:
+                    changeClothesOfExprop("date")
+                    shouldChangeBracelet()
+
+            else:
+                #Since we don't have weather apis to work with, we'll use blankets for summer/winter/fall/spring
+                if store.mas_isWinter():
+                    changeClothesOfExprop("jacket")
+                    if _current_bracelet:
+                        store.monika_chr.remove_acs(_current_bracelet)
+
+                #Summer gets date clothes (i.e. warm)
+                elif store.mas_isSummer():
+                    changeClothesOfExprop("date")
+                    shouldChangeBracelet()
+
+                #Spring and Fall both get sweater
+                else:
+                    changeClothesOfExprop("sweater")
+                    shouldChangeBracelet()
+
+    @store.mas_submod_utils.functionplugin("ch30_post_exp_check")
+    def startupAHCTrigger():
+        """
+        This allows Monika to change her hairstyle and clothes if we went from one day cycle to another
+        while the game was closed (going from day to night or v.v.).
+
+        This won't run is we came back from a date this session, if we saw the d25 intro today or
+        if today is O31 or F14.
+        """
+        if (
+            not store.mas_globals.returned_home_this_sesh
+            and (
+                store.mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() != datetime.date.today()
+                and not store.mas_isO31()
+                and not store.mas_isF14()
+            )
+        ):
+            if (
+                (
+                    store.mas_isDayNow()
+                    and (shouldChangeHair('day') or shouldChangeClothes('home'))
+                    and not hasHairPonytailRun()
+                )
+                or (
+                    store.mas_isNightNow()
+                    and (shouldChangeHair('night') or shouldChangeClothes('home'))
+                    and not hasHairDownRun()
+                )
+            ):
+                _hair_random_chance = renpy.random.randint(1,4)
+                _clothes_random_chance = renpy.random.randint(1,3)
+
+                if store.mas_isDayNow():
+                    _day_cycle = "day"
+                    _ahc_label = "monika_sethair_ponytail"
+
+                else:
+                    _day_cycle = "night"
+                    _ahc_label = "monika_sethair_down"
+
+                changeHairAndClothes(_day_cycle=_day_cycle, _hair_random_chance=_hair_random_chance, _clothes_random_chance=_clothes_random_chance)
+
+                _ahc_label_ev = store.mas_getEV(_ahc_label)
+
+                if (
+                    _ahc_label_ev is not None
+                    and _ahc_label_ev.last_seen is not None
+                ):
+                    _ahc_label_ev.last_seen = datetime.datetime.now()
+
+                store.mas_rmEVL(_ahc_label)
+
+init 3 python in ahc_utils:
+    import datetime
+
     def lastSeenOnDay(ev_label, _date=None):
         """
         Checks if the ev_label's event was last seen on _date
-
         IN:
             ev_label:
                 The eventlabel of the event we want to check
@@ -206,7 +660,6 @@ init python in ahc_utils:
                 Date we want to see if ev_label was last seen on
                 If None, today is assumed
                 (Default: None)
-
         OUT:
             boolean:
                 True if last seen on _date
@@ -227,8 +680,7 @@ init python in ahc_utils:
         elif not ev.last_seen:
             return False
 
-        #Otherwise let's do some work
-        if _date is None:
+        elif _date is None:
             _date = datetime.date.today()
 
         #Otherwise let's check
@@ -237,7 +689,6 @@ init python in ahc_utils:
     def hasHairDownRun():
         """
         Checks whether or not monika_sethair_down has run in the current night period or not.
-
         CONDITIONS:
             1) We haven't seen the label today
                 - and current time is between sunset and midnight
@@ -245,7 +696,6 @@ init python in ahc_utils:
             2) We have seen the label today and
                 - Current time is between sunset and midnight
                 - and the last time we saw the label was between midnight and sunrise
-
         OUT:
             boolean:
                 True if monika_sethair_down has run in the current night period
@@ -254,66 +704,223 @@ init python in ahc_utils:
         #NOTE: This try/except is for use of this function in event conditionals
         #Since mas_getEV doesn't exist until init 6
         try:
-            ev = store.mas_getEV("monika_sethair_down")
+            hairdown_ev = store.mas_getEV("monika_sethair_down")
         except:
-            ev = None
+            hairdown_ev = None
 
         #If we don't have the ev, we return None to note it
-        if not ev:
+        if not hairdown_ev:
             return None
 
         #If we've not seen it before, we know it hasn't run and don't need to do more work
-        elif not ev.last_seen:
+        elif not hairdown_ev.last_seen:
             return False
 
         _now = datetime.datetime.now()
         yesterday = datetime.date.today() - datetime.timedelta(1)
 
-        return (
+        return not (
             (
+                lastSeenOnDay("monika_sethair_down")
+                and store.mas_isSStoMN(_now)
+                and (
+                    store.mas_isMNtoSR(hairdown_ev.last_seen + datetime.timedelta(minutes=5))
+                    or store.mas_isMNtoSR(hairdown_ev.last_seen - datetime.timedelta(minutes=5))
+                )
+            )
+            or (
                 not lastSeenOnDay("monika_sethair_down")
                 and (
                     store.mas_isSStoMN(_now)
                     or (
                         store.mas_isMNtoSR(_now)
-                        and not (lastSeenOnDay("monika_sethair_down", yesterday)
-                        and store.mas_isSStoMN(ev.last_seen))
+                        and (
+                            not (
+                                lastSeenOnDay("monika_sethair_down", yesterday)
+                                and (
+                                    store.mas_isSStoMN(hairdown_ev.last_seen + datetime.timedelta(minutes=5))
+                                    or store.mas_isSStoMN(hairdown_ev.last_seen - datetime.timedelta(minutes=5))
+                                )
+                            )
+                            or (
+                                lastSeenOnDay("monika_sethair_down", yesterday)
+                                and store.mas_o31 == yesterday
+                                and not store.persistent._mas_o31_in_o31_mode
+                            )
+                        )
                     )
                 )
             )
-            or (
-                lastSeenOnDay("monika_sethair_down")
-                and store.mas_isSStoMN(_now)
-                and store.mas_isMNtoSR(ev.last_seen)
-            )
         )
 
-init 999 python in ahc_utils:
-    @store.mas_submod_utils.functionplugin("bye_going_somewhere_rtg")
-    def getReady():
+    def hasHairPonytailRun():
         """
-        Gets Monika ready for a date
+        Checks whether or not monika_sethair_ponytail has run in the current day period or not.
+        OUT:
+            boolean:
+                True if monika_sethair_ponytail has run in the current day period
+                False otherwise
         """
-        #Make hair is either what player asked, or Moni's choice
+        #NOTE: This try/except is for use of this function in event conditionals
+        #Since mas_getEV doesn't exist until init 6
+        try:
+            hairponytail_ev = store.mas_getEV("monika_sethair_ponytail")
+        except:
+            hairponytail_ev = None
+
+        #If the event doesn't exist, return None to note it
+        if not hairponytail_ev:
+            return None
+
+        #No last seen means we know it wasn't seen on the date
+        elif not hairponytail_ev.last_seen:
+            return False
+
+        return lastSeenOnDay("monika_sethair_ponytail")
+
+    def shouldChangeHair(hair_type):
+        """
+        Checks whether Monika should change her hair
+        """
+        if not hair_type:
+            return False
+
+        return (
+            (
+                (
+                    len(eval("get{0}Hair()".format(hair_type.capitalize()))) > 1
+                    and isWearingDayHair()
+                    and isWearingNightHair()
+                )
+                or not eval("isWearing{0}Hair()".format(hair_type.capitalize()))
+            )
+            and not store.persistent._mas_force_hair
+        )
+
+    def shouldChangeClothes(exprop):
+        """
+        Checks whether Monika should change her clothes
+        """
+        if not exprop:
+            return False
+
+        return not store.persistent._mas_force_clothes and hasUnlockedClothesOfExprop(exprop)
+
+
+init 4 python in ahc_utils:
+
+    def changeHairAndClothes(_day_cycle, _hair_random_chance, _clothes_random_chance):
+        """
+        Allows Monika to change her hair and clothes depending on day cycle and random chance.
+        IN:
+            _day_cycle:
+                The day cycle that corresponds to the type of hair/clothes we want Monika to change to.
+                (Acceptable values: 'day', 'night')
+            _hair_random_chance:
+                Random chance that determins whether Monika should change her hair.
+                If _hair_random_chance is 1 then Monika keeps the current hairstyle.
+            _clothes_random_chance:
+                Random chance that determins whether Monika should change her clothes.
+                If _clothes_random_chance is 1 then Monika keeps the current outfit.
+        """
+
+        if _day_cycle.lower() not in ["day", "night"]:
+            return
+
+        if _day_cycle.lower() == "day":
+            # Remove the ribbon if it's still there from the last time she changed to a non-down hairstyle
+            if store.monika_chr.is_wearing_ribbon():
+                prev_ribbon = store.monika_chr.get_acs_of_type("ribbon")
+                if prev_ribbon is None:
+                    prev_ribbon = store.monika_chr.get_acs_of_exprop("ribbon-like")
+                if prev_ribbon is not None:
+                    store.monika_chr.remove_acs(prev_ribbon)
+
+        # Change clothes section
         if (
-            (not store.persistent._mas_force_hair or store.monika_chr.is_wearing_clothes_with_exprop("costume"))
-            and not isWearingDayHair()
+            shouldChangeClothes("home")
+            and (
+                not isWearingClothesOfExprop("home")
+                or (isWearingClothesOfExprop("home") and _clothes_random_chance != 1)
+            )
         ):
-            store.monika_chr.change_hair(renpy.random.choice(getDayHair()), by_user=False)
+            changeClothesOfExprop(exprop="home", chance=False)
 
-            #We'll wear a ribbon if it's a special day and we're able to force
-            if store.mas_isSpecialDay():
+            prev_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
+
+            if prev_bracelet:
+                shouldChangeBracelet()
+            else:
+
                 if (
-                    has_and_unlocked("multimokia_bow_black")
-                    and not store.monika_chr.is_wearing_hair_with_exprop("twintails")
+                    isWearingClothesOfExprop("dark bracelet")
+                    and isWearingClothesOfExprop("light bracelet")
                 ):
-                    store.mas_sprites._acs_wear_if_found(store.monika_chr, "multimokia_bow_black")
+                    if renpy.random.randint(1,2) == 1:
+                        store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
+                    else:
+                        store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
 
-                elif has_and_unlocked("ribbon_black"):
-                    store.monika_chr.wear_acs(mas_acs_ribbon_black)
+                elif isWearingClothesOfExprop("dark bracelet"):
+                    store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
 
-                else:
-                    store.monika_chr.wear_acs(mas_acs_ribbon_def)
+                elif isWearingClothesOfExprop("light bracelet"):
+                    store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
+
+        # Change hairstyle section
+        if (
+            (
+                (
+                    len(eval("get{0}Hair()".format(_day_cycle.capitalize()))) > 1
+                    and isWearingDayHair()
+                    and isWearingNightHair()
+                    and _hair_random_chance != 1
+                )
+            or not eval("isWearing{0}Hair()".format(_day_cycle.capitalize()))
+            )
+            and not store.persistent._mas_force_hair
+        ):
+
+            _hair_list = eval("get{0}Hair()".format(_day_cycle.capitalize()))
+
+            if eval("isWearing{0}Hair()".format(_day_cycle.capitalize())):
+                _hair_list.remove(store.monika_chr.hair)
+
+            store.monika_chr.change_hair(
+                renpy.random.choice(_hair_list),
+                by_user=False
+            )
+
+        # Remove the thermos if we have one
+
+        thermos_acs = store.monika_chr.get_acs_of_type("thermos-mug")
+
+        if thermos_acs:
+            store.monika_chr.remove_acs(thermos_acs)
+            mas_rmallEVL("mas_consumables_remove_thermos")
+
+
+init -2 python in mas_sprites:
+    import store
+
+    def _outfit_wear_if_gifted(_moni_chr, outfit_name, by_user=False):
+        """
+        Wears the outfit if it exists and has been gifted/reacted.
+        It has been gifted/reacted if the selectable is unlocked.
+
+        IN:
+            _moni_chr - MASMonika object
+            outfit_name - name of the outfit
+            by_user - True if this action was mandated by user, False if not.
+                (Default: False)
+        """
+        outfit_to_wear = store.mas_sprites.get_sprite(
+            store.mas_sprites.SP_CLOTHES,
+            outfit_name
+        )
+        if outfit_to_wear is not None and store.mas_SELisUnlocked(outfit_to_wear):
+            _moni_chr.change_clothes(outfit_to_wear, by_user=by_user)
+
 
 init 5 python:
     addEvent(
@@ -322,11 +929,8 @@ init 5 python:
             eventlabel="monika_sethair_ponytail",
             conditional=(
                 "mas_isDayNow() "
-                "and not store.persistent._mas_force_hair "
-                "and ((len(store.ahc_utils.getDayHair()) > 1 "
-                "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
-                "or not store.ahc_utils.isWearingDayHair()) "
-                "and mas_timePastSince(persistent._ahc_last_set_hair['day'], datetime.timedelta(hours=12))"
+                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and not store.ahc_utils.hasHairPonytailRun() "
             ),
             action=EV_ACT_PUSH,
             show_in_idle=True,
@@ -335,69 +939,75 @@ init 5 python:
     )
 
 label monika_sethair_ponytail:
-    if ahc_utils.lastSeenOnDay("monika_sethair_ponytail"):
-        if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-            m 3eua "I'm going to change my hairstyle, I'll be right back.{w=0.5}.{w=0.5}.{w=2}{nw}"
-        else:
-            m 1esa "Give me a moment, [player]."
-            m 1eua "I'm just going to change my hairstyle a little bit.{w=0.5}.{w=0.5}.{nw}"
 
-    else:
+    if (
+        mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today()
+        or mas_isO31()
+        or mas_isF14()
+    ):
+        jump .sethair_ponytail_recondition
+
+    $ _hair_random_chance = renpy.random.randint(1,4)
+    $ _clothes_random_chance = renpy.random.randint(1,3)
+
+    if (
+        (
+            store.ahc_utils.shouldChangeClothes("home")
+            and (
+                not store.ahc_utils.isWearingClothesOfExprop("home")
+                or (store.ahc_utils.isWearingClothesOfExprop("home") and _clothes_random_chance != 1)
+            )
+        )
+        or (
+            (
+                len(store.ahc_utils.getDayHair()) > 1
+                and store.ahc_utils.isWearingDayHair()
+                and store.ahc_utils.isWearingNightHair()
+                and _hair_random_chance != 1
+            )
+            or not store.ahc_utils.isWearingDayHair()
+        )
+    ):
+
         if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-            m 3eua "I'm going to get ready for today.{w=0.5}.{w=0.5}.{w=2}{nw}"
+            m 3eua "I'm going to get ready for today.{w=0.5}.{w=0.5}.{w=1}{nw}"
 
         else:
             m 1eua "Give me a second, [player]."
             m 3eua "I'm just getting myself ready for the day.{w=0.5}.{w=0.5}.{nw}"
 
-    window hide
-    call mas_transition_to_emptydesk
+        window hide
+        call mas_transition_to_emptydesk
 
-    python:
-        renpy.pause(3.0, hard=True)
+        $ renpy.pause(1.0, hard=True)
 
-        day_hair_list = ahc_utils.getDayHair()
+        $ store.ahc_utils.changeHairAndClothes(_day_cycle="day", _hair_random_chance=_hair_random_chance, _clothes_random_chance=_clothes_random_chance)
 
-        if ahc_utils.isWearingDayHair():
-            day_hair_list.remove(monika_chr.hair)
+        $ renpy.pause(4.0, hard=True)
 
-        monika_chr.change_hair(
-            renpy.random.choice(day_hair_list),
-            by_user=False
-        )
+        window hide
+        call mas_transition_from_emptydesk("monika 3hub")
 
-        thermos_acs = monika_chr.get_acs_of_type("thermos-mug")
+        if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
+            m 3hub "All done!{w=1}{nw}"
 
-        if thermos_acs:
-            monika_chr.remove_acs(thermos_acs)
-            mas_rmallEVL("mas_consumables_remove_thermos")
+        else:
+            m 3hub "All done!"
+            m 1eua "If you want me to change my hairstyle, just ask, okay?"
 
-        renpy.pause(2.0, hard=True)
+        #Need to recondition/action this
 
-        persistent._ahc_last_set_hair["day"] = datetime.datetime.now()
+    label .sethair_ponytail_recondition:
+        pass
 
-    call mas_transition_from_emptydesk("monika 3hub")
-    window auto
-
-    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-        m 3hub "All done!{w=1}{nw}"
-
-    else:
-        m 3hub "All done!"
-        m 1eua "If you want me to change my hairstyle, just ask, okay?"
-
-    #Need to recondition/action this
     python:
         hairup_ev = mas_getEV("monika_sethair_ponytail")
 
         hairup_ev.conditional=(
-            "mas_isDayNow() "
-            "and not store.persistent._mas_force_hair "
-            "and ((len(store.ahc_utils.getDayHair()) > 1 "
-            "and store.ahc_utils.isWearingDayHair() and store.ahc_utils.isWearingNightHair()) "
-            "or not store.ahc_utils.isWearingDayHair()) "
-            "and mas_timePastSince(persistent._ahc_last_set_hair['day'], datetime.timedelta(hours=12))"
-        )
+                "mas_isDayNow() "
+                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and not store.ahc_utils.hasHairPonytailRun() "
+            )
         hairup_ev.action = EV_ACT_PUSH
     return
 
@@ -408,12 +1018,11 @@ init 5 python:
             persistent.event_database,
             eventlabel="monika_sethair_down",
             conditional=(
-                "not mas_isDayNow() "
-                "and not store.persistent._mas_force_hair "
-                "and ((len(store.ahc_utils.getNightHair()) > 1 "
-                "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
-                "or not store.ahc_utils.isWearingNightHair()) "
-                "and mas_timePastSince(persistent._ahc_last_set_hair['night'], datetime.timedelta(hours=12))"
+                "mas_isNightNow() "
+                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and (not store.ahc_utils.hasHairDownRun() "
+                "or (store.mas_globals.returned_home_this_sesh "
+                "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
             ),
             action=EV_ACT_PUSH,
             show_in_idle=True,
@@ -421,76 +1030,83 @@ init 5 python:
         )
     )
 
-label monika_sethair_down:
-    if ahc_utils.hasHairDownRun():
-        if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-            m 1eua "I'm just going to change my hair a little bit, give me a second.{w=0.5}.{w=0.5}.{w=2}{nw}"
-        else:
-            m 1eua "Give me a second [player], I'm just going to change my hairstyle a little bit.{w=0.5}.{w=0.5}.{nw}"
 
-    else:
+label monika_sethair_down:
+
+    if mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today() or mas_isO31():
+        jump .sethair_sethair_recondition
+
+    $ _hair_random_chance = renpy.random.randint(1,4)
+    $ _clothes_random_chance = "1" if mas_isF14() else renpy.random.randint(1,3)
+
+    if (
+        (
+            store.ahc_utils.shouldChangeClothes("home")
+            and (
+                not store.ahc_utils.isWearingClothesOfExprop("home")
+                or (store.ahc_utils.isWearingClothesOfExprop("home") and _clothes_random_chance != 1)
+            )
+        )
+        or (
+            (
+                len(store.ahc_utils.getNightHair()) > 1
+                and store.ahc_utils.isWearingDayHair()
+                and store.ahc_utils.isWearingNightHair()
+                and _hair_random_chance != 1
+            )
+            or not store.ahc_utils.isWearingNightHair()
+        )
+    ):
+
         if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-            m 1eua "I'm just going to make myself a little more comfortable, I'll be right back.{w=0.5}.{w=0.5}.{w=2}{nw}"
+            m 1eua "I'm just going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{w=1}{nw}"
         else:
             m 1eua "Give me a moment [player], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
 
-    window hide
-    call mas_transition_to_emptydesk
+        window hide
+        call mas_transition_to_emptydesk
 
-    python:
-        renpy.pause(3.0, hard=True)
+        python:
+            renpy.pause(1.0, hard=True)
 
-        #Get the night hair
-        night_hair_list = ahc_utils.getNightHair()
+            store.ahc_utils.changeHairAndClothes(
+                _day_cycle="night",
+                _hair_random_chance=_hair_random_chance,
+                _clothes_random_chance=_clothes_random_chance
+            )
 
-        #If we're already wearing night hair, we don't want to come back as the same
-        if ahc_utils.isWearingNightHair():
-            night_hair_list.remove(monika_chr.hair)
+            renpy.pause(4.0, hard=True)
 
-        monika_chr.change_hair(
-            renpy.random.choice(night_hair_list),
-            by_user=False
-        )
+        call mas_transition_from_emptydesk("monika 1eua")
+        window hide
 
-        thermos_acs = monika_chr.get_acs_of_type("thermos-mug")
-
-        if thermos_acs:
-            monika_chr.remove_acs(thermos_acs)
-            mas_rmallEVL("mas_consumables_remove_thermos")
-
-        renpy.pause(2.0, hard=True)
-
-        persistent._ahc_last_set_hair["night"] = datetime.datetime.now()
-
-    call mas_transition_from_emptydesk("monika 1eua")
-    window auto
-
-    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-        m 1eua "That feels better.{w=1}{nw}"
-
-    else:
-        m 1eua "That feels much better."
-        if not renpy.has_label('monika_welcome_home'):
-            show monika 5eua at t11 zorder MAS_MONIKA_Z with dissolve
-            m 5eua "Let's have a nice evening together, [player]."
+        if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
+            m 1eua "That feels better.{w=1}{nw}"
 
         else:
-            show monika 5hua at t11 zorder MAS_MONIKA_Z with dissolve
+            m 1eua "That feels much better."
+            if not renpy.has_label('monika_welcome_home'):
+                show monika 5eua at t11 zorder MAS_MONIKA_Z with dissolve_monika
+                m 5eua "Let's have a nice evening together, [player]."
 
-        m 5hua "If you'd like me to change my hair back, just ask~"
+            else:
+                show monika 5hua at t11 zorder MAS_MONIKA_Z with dissolve_monika
 
+            m 5hua "If you'd like me to change, just ask~"
 
-    #Need to recondition/action this
+    label .sethair_sethair_recondition:
+        pass
+
+        #Need to recondition/action this
     python:
         hairdown_ev = mas_getEV("monika_sethair_down")
 
         hairdown_ev.conditional=(
-            "not mas_isDayNow() "
-            "and not store.persistent._mas_force_hair "
-            "and ((len(store.ahc_utils.getNightHair()) > 1 "
-            "and store.ahc_utils.isWearingNightHair() and store.ahc_utils.isWearingDayHair()) "
-            "or not store.ahc_utils.isWearingNightHair()) "
-            "and mas_timePastSince(persistent._ahc_last_set_hair['night'], datetime.timedelta(hours=12))"
-        )
+                "mas_isNightNow() "
+                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and (not store.ahc_utils.hasHairDownRun() "
+                "or (store.mas_globals.returned_home_this_sesh "
+                "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
+            )
         hairdown_ev.action = EV_ACT_PUSH
     return
