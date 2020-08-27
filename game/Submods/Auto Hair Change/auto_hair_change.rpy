@@ -16,10 +16,11 @@ init -989 python in ahc_utils:
     #Register the updater if needed
     if store.mas_submod_utils.isSubmodInstalled("Submod Updater Plugin"):
         store.sup_utils.SubmodUpdater(
-            submod=store.mas_submod_utils.nm_submod,
+            submod=store.mas_submod_utils.ahc_submod,
             user_name="multimokia",
             repository_name="MAS-Submod-Auto-Outfit-Change",
             tag_formatter=lambda x: x[x.index('_') + 1:],
+            update_dir="",
             attachment_id=None,
         )
 
