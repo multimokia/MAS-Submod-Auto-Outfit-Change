@@ -151,9 +151,9 @@ init python in ahc_utils:
         "orcaramelo_hair_bundown.json": {"day": True},
         "mas_hair_bun.json": {"day": True},
         "orcaramelo_clothes_sweater_shoulderless.json": {"sweater": True, "dark bracelet": True},
-        "finale_clothes_jacket_brown.json": {"jacket": True},
+        "finale_clothes_jacket_brown.json": {"jacket": True, "no bracelet": True},
         "velius94_clothes_dress_whitenavyblue.json": {"home": True, "light bracelet": True, "dark bracelet": True},
-        #TODO: add green hoodie
+        "finale_hoodie_green.json": {"sweater": True, "no bracelet": True}
     }
 
     def __updateJsons():
@@ -450,6 +450,8 @@ init 1 python in ahc_utils:
             store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
         elif isWearingClothesOfExprop("dark bracelet") and _current_bracelet.name == "flower_bracelet_light" and has_and_unlocked("flower_bracelet_dark"):
             store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
+        elif isWearingClothesOfExprop("no bracelet") and _current_bracelet.name in ["flower_bracelet_dark", "flower_bracelet_light"]:
+            store.monika_chr.remove_acs(_current_bracelet)
 
         return
 
@@ -556,11 +558,9 @@ init 999 python in ahc_utils:
 
         #Moni changes her clothes depending on certain conditions or wears what the player asked
         if not store.persistent._mas_force_clothes:
-            _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
             if store.mas_isSpecialDay():
                 changeClothesOfExprop("formal")
-                shouldChangeBracelet()
 
             #We need to verify that auto atmos change is installed before accessing its code
             elif store.mas_isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
@@ -568,33 +568,28 @@ init 999 python in ahc_utils:
 
                 if min_temp < TEMP_COOL_MIN:
                     changeClothesOfExprop("jacket")
-                    if _current_bracelet:
-                        store.monika_chr.remove_acs(_current_bracelet)
 
                 elif TEMP_COOL_MIN <= min_temp <= TEMP_COOL_MAX:
                     changeClothesOfExprop("sweater")
-                    shouldChangeBracelet()
 
                 else:
                     changeClothesOfExprop("date")
-                    shouldChangeBracelet()
 
             else:
                 #Since we don't have weather apis to work with, we'll use blankets for summer/winter/fall/spring
                 if store.mas_isWinter():
                     changeClothesOfExprop("jacket")
-                    if _current_bracelet:
-                        store.monika_chr.remove_acs(_current_bracelet)
 
                 #Summer gets date clothes (i.e. warm)
                 elif store.mas_isSummer():
                     changeClothesOfExprop("date")
-                    shouldChangeBracelet()
 
                 #Spring and Fall both get sweater
                 else:
                     changeClothesOfExprop("sweater")
-                    shouldChangeBracelet()
+
+            #Check if we should change or remove the bracelet
+            shouldChangeBracelet()
 
     @store.mas_submod_utils.functionplugin("ch30_post_exp_check")
     def startupAHCTrigger():
