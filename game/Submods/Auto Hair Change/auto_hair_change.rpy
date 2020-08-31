@@ -208,6 +208,7 @@ init python in ahc_utils:
     def getDayHair():
         """
         Gets day hair
+
         OUT:
             list() of unlocked MASHair objects which are suited for day and are compatible with the current clothes
         """
@@ -239,6 +240,7 @@ init python in ahc_utils:
     def isWearingDayHair():
         """
         Checks if Monika is wearing day hair
+
         OUT:
             boolean:
                 True if Monika is wearing day hair
@@ -254,6 +256,7 @@ init python in ahc_utils:
     def isWearingNightHair():
         """
         Checks if Monika is wearing night hair
+
         OUT:
             boolean:
                 True if Monika is wearing night hair
@@ -520,6 +523,13 @@ init 2 python in ahc_utils:
 
         return
 
+init 6 python:
+
+    # Update the rules of these greetings so that she doesn't change on her own on startup, if any of these are chosen
+
+    store.mas_getEVLPropValue("mas_crashed_start", "rules", dict()).update({"no_cloth_change": None})
+    store.mas_getEVLPropValue("greeting_hairdown", "rules", dict()).update({"no_cloth_change": None})
+
 init 999 python in ahc_utils:
 
     @store.mas_submod_utils.functionplugin("mas_dockstat_generic_rtg")
@@ -591,14 +601,14 @@ init 999 python in ahc_utils:
             #Check if we should change or remove the bracelet
             shouldChangeBracelet()
 
-    @store.mas_submod_utils.functionplugin("ch30_post_exp_check")
+    @store.mas_submod_utils.functionplugin("ch30_preloop")
     def startupAHCTrigger():
         """
         This allows Monika to change her hairstyle and clothes if we went from one day cycle to another
         while the game was closed (going from day to night or v.v.).
 
         This won't run is we came back from a date this session, if we saw the d25 intro today or
-        if today is O31 or F14.
+        if today is O31 or F14 or if 'no_cloth_change' is in the greeting's rules.
         """
         if (
             not store.mas_globals.returned_home_this_sesh
@@ -606,6 +616,7 @@ init 999 python in ahc_utils:
                 store.mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() != datetime.date.today()
                 and not store.mas_isO31()
                 and not store.mas_isF14()
+                and "no_cloth_change" not in store.mas_getEVLPropValue(store.selected_greeting, "rules", {})
             )
         ):
             if (
@@ -975,11 +986,16 @@ label monika_sethair_ponytail:
         window hide
         call mas_transition_to_emptydesk
 
-        $ renpy.pause(1.0, hard=True)
+        python:
+            renpy.pause(1.0, hard=True)
 
-        $ store.ahc_utils.changeHairAndClothes(_day_cycle="day", _hair_random_chance=_hair_random_chance, _clothes_random_chance=_clothes_random_chance)
+            store.ahc_utils.changeHairAndClothes(
+                _day_cycle="day",
+                _hair_random_chance=_hair_random_chance,
+                _clothes_random_chance=_clothes_random_chance
+            )
 
-        $ renpy.pause(4.0, hard=True)
+            renpy.pause(4.0, hard=True)
 
         window hide
         call mas_transition_from_emptydesk("monika 3hub")
