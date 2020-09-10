@@ -511,7 +511,7 @@ init 2 python in ahc_utils:
 
         elif (
             isWearingClothesOfExprop(exprop)
-            and len(getOutfitsOfExprop(exprop)) > 1
+            and isinstance(getOutfitsOfExprop(exprop), list)
             and _random_chance != 1
         ):
             _clothes_list = getOutfitsOfExprop(exprop)
