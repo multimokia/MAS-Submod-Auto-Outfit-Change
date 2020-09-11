@@ -904,7 +904,7 @@ init 4 python in ahc_utils:
 
         if thermos_acs:
             store.monika_chr.remove_acs(thermos_acs)
-            mas_rmallEVL("mas_consumables_remove_thermos")
+            store.mas_rmallEVL("mas_consumables_remove_thermos")
 
 
 init -2 python in mas_sprites:
@@ -928,6 +928,40 @@ init -2 python in mas_sprites:
         if outfit_to_wear is not None and store.mas_SELisUnlocked(outfit_to_wear):
             _moni_chr.change_clothes(outfit_to_wear, by_user=by_user)
 
+init 50 python:
+    #Reset the ahc evs here as well in case they somehow lost their conditionals/actions
+
+    def ahc_recond_ponytail():
+        """
+        Recondition and action the ahc ponytail event
+        """
+        hairup_ev = mas_getEV("monika_sethair_ponytail")
+
+        hairup_ev.conditional=(
+                "mas_isDayNow() "
+                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and not store.ahc_utils.hasHairPonytailRun() "
+            )
+        hairup_ev.action = EV_ACT_PUSH
+
+    def ahc_recond_down():
+        """
+        Recondition and action the ahc down event
+        """
+        hairdown_ev = mas_getEV("monika_sethair_down")
+
+        hairdown_ev.conditional=(
+                "mas_isNightNow() "
+                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and (not store.ahc_utils.hasHairDownRun() "
+                "or (store.mas_globals.returned_home_this_sesh "
+                "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
+            )
+        hairdown_ev.action = EV_ACT_PUSH
+
+
+    ahc_recond_ponytail()
+    ahc_recond_down()
 
 init 5 python:
     addEvent(
@@ -947,12 +981,15 @@ init 5 python:
 
 label monika_sethair_ponytail:
 
+    #Need to recondition/action this
+    $ ahc_recond_ponytail()
+
     if (
         mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today()
         or mas_isO31()
         or mas_isF14()
     ):
-        jump .sethair_ponytail_recondition
+        return
 
     $ _hair_random_chance = renpy.random.randint(1,4)
     $ _clothes_random_chance = renpy.random.randint(1,3)
@@ -1007,20 +1044,6 @@ label monika_sethair_ponytail:
             m 3hub "All done!"
             m 1eua "If you want me to change my hairstyle, just ask, okay?"
 
-        #Need to recondition/action this
-
-    label .sethair_ponytail_recondition:
-        pass
-
-    python:
-        hairup_ev = mas_getEV("monika_sethair_ponytail")
-
-        hairup_ev.conditional=(
-                "mas_isDayNow() "
-                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
-                "and not store.ahc_utils.hasHairPonytailRun() "
-            )
-        hairup_ev.action = EV_ACT_PUSH
     return
 
 
@@ -1045,8 +1068,11 @@ init 5 python:
 
 label monika_sethair_down:
 
+    #Need to recondition/action this
+    $ ahc_recond_down()
+
     if mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today() or mas_isO31():
-        jump .sethair_sethair_recondition
+        return
 
     $ _hair_random_chance = renpy.random.randint(1,4)
     $ _clothes_random_chance = "1" if mas_isF14() else renpy.random.randint(1,3)
@@ -1106,19 +1132,4 @@ label monika_sethair_down:
 
             m 5hua "If you'd like me to change, just ask~"
 
-    label .sethair_sethair_recondition:
-        pass
-
-        #Need to recondition/action this
-    python:
-        hairdown_ev = mas_getEV("monika_sethair_down")
-
-        hairdown_ev.conditional=(
-                "mas_isNightNow() "
-                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
-                "and (not store.ahc_utils.hasHairDownRun() "
-                "or (store.mas_globals.returned_home_this_sesh "
-                "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
-            )
-        hairdown_ev.action = EV_ACT_PUSH
     return
