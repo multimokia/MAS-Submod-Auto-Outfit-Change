@@ -99,10 +99,8 @@ init python in ahc_utils:
     #CONSTS
     #NOTE: This is managed in terms of Celsius
     #TODO: Change these to work on live adjustment. Will be an AAC change to provide the utils to do this
-    TEMP_WARM_MIN = 21
-
     TEMP_COOL_MAX = 20
-    TEMP_COOL_MIN = 10
+    TEMP_COLD_MAX = 10
 
     __BUILTIN_DAY_HAIR = [
         store.mas_hair_def,
@@ -296,6 +294,63 @@ init python in ahc_utils:
         Returns True if we have the outfit and it's unlocked
         """
         return outfit_name in store.mas_selspr.CLOTH_SEL_MAP and store.mas_selspr.CLOTH_SEL_MAP[outfit_name].unlocked
+
+    def getClothesExpropForTemperature(indoor=True):
+        """
+        Gets a clothes exprop for the current temperature if Auto Atmos Change is installed
+        Otherwise, we'll use a timeframe to determine
+
+        IN:
+            indoor - whether or not this is for indoors or not
+            (Default: True)
+        """
+        #First, let's see if we have AAC
+        if store.mas_isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
+            min_temp = store.awc_getTemperature(temp="temp_min")
+
+            #If the weather is below the cool thresh (cold), we'll opt for a jacket (unless indoors, in which case sweater)
+            if min_temp <= TEMP_COLD_MAX:
+                return "sweater" if indoor else  "jacket"
+
+            #Otherwise, if it's chilly out, we'll have a sweater
+            elif TEMP_COLD_MAX < min_temp <= TEMP_COOL_MAX:
+                return "sweater"
+
+            else:
+                return "home" if indoor else "date"
+
+        else:
+            #If it's winter, then this is simplified
+            if mas_isWinter():
+                return "sweater" if indoor else "jacket"
+
+            #Likewise summer
+            elif mas_isSummer():
+                return "home" if indoor else "date"
+
+            #Otherwise, we need to do a bit more work
+            else:
+                #Firstly, let's deal with hemispheres
+                if store.persistent._mas_pm_live_south_hemisphere:
+                    winter_start = store.mas_summer_solstice
+                    winter_end = store.mas_fall_equinox
+                else:
+                    winter_start = store.mas_winter_solstice
+                    winter_end = store.mas_spring_equinox
+
+                if mas_isSpring():
+                    if datetime.date.today() <= store.mas_utils.add_months(winter_end, 1):
+                        return "sweater" if indoor else "jacket"
+                    else:
+                        return "home" if indoor else "date"
+
+                else:
+                    if datetime.date.today() >= store.mas_utils.add_months(winter_start, -1):
+                        return "sweater" if indoor else "jacket"
+                    else:
+                        return "home" if indoor else "date"
+
+
 
     def getRandOutfitOfExprop(exprop, value=None):
         """
