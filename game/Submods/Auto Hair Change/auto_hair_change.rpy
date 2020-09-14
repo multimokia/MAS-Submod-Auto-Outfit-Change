@@ -58,12 +58,11 @@ label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
 
         if hairdown_ev:
             correct_conditional=(
-                    "mas_isNightNow() "
-                    "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
-                    "and (not store.ahc_utils.hasHairDownRun() "
-                    "or (store.mas_globals.returned_home_this_sesh "
-                    "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
-                )
+                "mas_isNightNow() "
+                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and (not store.ahc_utils.hasHairDownRun() "
+                "or store.mas_globals.ahc_run_after_date) "
+            )
 
             if hairdown_ev.conditional != correct_conditional:
                 hairdown_ev.conditional = correct_conditional
@@ -75,10 +74,10 @@ label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
 
         if hairponytail_ev:
             correct_conditional=(
-                    "mas_isDayNow() "
-                    "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
-                    "and not store.ahc_utils.hasHairPonytailRun() "
-                )
+                "mas_isDayNow() "
+                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and not store.ahc_utils.hasHairPonytailRun() "
+            )
 
             if hairponytail_ev.conditional != correct_conditional:
                 hairponytail_ev.conditional = correct_conditional
@@ -87,6 +86,9 @@ label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
                 hairponytail_ev.action = EV_ACT_PUSH
 
     return
+
+init -1 python in mas_globals:
+    ahc_run_after_date = bool(store.persistent._mas_moni_chksum)
 
 init python in ahc_utils:
     import random
@@ -139,6 +141,14 @@ init python in ahc_utils:
         store.mas_clothes_blackdress
     ]
 
+    __BUILTIN_LIGHT_BRACELET_ACS = [
+        store.mas_acs_hairties_bracelet_brown
+    ]
+
+    __BUILTIN_DARK_BRACELET_ACS = [
+        store.mas_acs_hairties_bracelet_brown
+    ]
+
     #filename: {ex_prop: value}
     json_update_map = {
         "orcaramelo_hair_bunbraid.json": {"day": True},
@@ -146,12 +156,13 @@ init python in ahc_utils:
         "orcaramelo_hair_twintails.json": {"day": True},
         "orcaramelo_hair_twinbun.json": {"day": True},
         "orcaramelo_hair_usagi.json": {"day": True},
-        "orcaramelo_hair_bundown.json": {"day": True},
         "mas_hair_bun.json": {"day": True},
         "orcaramelo_clothes_sweater_shoulderless.json": {"sweater": True, "dark bracelet": True},
         "finale_clothes_jacket_brown.json": {"jacket": True, "no bracelet": True},
-        "velius94_clothes_dress_whitenavyblue.json": {"home": True, "light bracelet": True, "dark bracelet": True},
-        "finale_hoodie_green.json": {"sweater": True, "no bracelet": True}
+        "velius94_clothes_dress_whitenavyblue.json": {"home": True, "date": True, "light bracelet": True, "dark bracelet": True},
+        "finale_hoodie_green.json": {"sweater": True, "no bracelet": True},
+        "velius94_acs_flower_bracelet_light.json": {"light": True},
+        "velius94_acs_flower_bracelet_dark.json": {"dark": True}
     }
 
     def __updateJsons():
@@ -305,7 +316,7 @@ init python in ahc_utils:
             (Default: True)
         """
         #First, let's see if we have AAC
-        if store.mas_isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
+        if store.mas_submod_utils.isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
             min_temp = store.awc_getTemperature(temp="temp_min")
 
             #If the weather is below the cool thresh (cold), we'll opt for a jacket (unless indoors, in which case sweater)
@@ -321,11 +332,11 @@ init python in ahc_utils:
 
         else:
             #If it's winter, then this is simplified
-            if mas_isWinter():
+            if store.mas_isWinter():
                 return "sweater" if indoor else "jacket"
 
             #Likewise summer
-            elif mas_isSummer():
+            elif store.mas_isSummer():
                 return "home" if indoor else "date"
 
             #Otherwise, we need to do a bit more work
@@ -338,7 +349,7 @@ init python in ahc_utils:
                     winter_start = store.mas_winter_solstice
                     winter_end = store.mas_spring_equinox
 
-                if mas_isSpring():
+                if store.mas_isSpring():
                     if datetime.date.today() <= store.mas_utils.add_months(winter_end, 1):
                         return "sweater" if indoor else "jacket"
                     else:
@@ -351,7 +362,7 @@ init python in ahc_utils:
                         return "home" if indoor else "date"
 
 
-
+    # Clothes stuff
     def getRandOutfitOfExprop(exprop, value=None):
         """
         IN:
@@ -474,6 +485,141 @@ init python in ahc_utils:
 
         return False
 
+
+    # ACS stuff
+    def getRandACSOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A random unlocked acs of a specific exprop
+        """
+
+        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
+
+        exprops_map = {
+            "light": __BUILTIN_LIGHT_BRACELET_ACS,
+            "dark": __BUILTIN_DARK_BRACELET_ACS
+        }
+
+        acs_pool = []
+
+        for acs_name in store.mas_sprites.ACS_MAP:
+            accessory = store.mas_sprites.ACS_MAP[acs_name]
+            if (
+                accessory.hasprop(exprop)
+                and (
+                    value is None
+                    or value == accessory.getprop(exprop)
+                )
+                and store.mas_SELisUnlocked(accessory)
+            ):
+                acs_pool.append(accessory)
+
+        if exprop in exprops_map:
+            for accessory in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(accessory):
+                    acs_pool.append(accessory)
+
+        if len(acs_pool) < 1:
+            return None
+
+        elif len(acs_pool) < 2:
+            return acs_pool[0]
+
+        else:
+            return random.choice(acs_pool)
+
+    def getACSOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A list of unlocked ACS of a specific exprop
+        """
+
+        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
+
+        exprops_map = {
+            "light": __BUILTIN_LIGHT_BRACELET_ACS,
+            "dark": __BUILTIN_DARK_BRACELET_ACS
+        }
+
+        acs_pool = []
+
+        for acs_name in store.mas_sprites.ACS_MAP:
+            accessory = store.mas_sprites.ACS_MAP[acs_name]
+            if (
+                accessory.hasprop(exprop)
+                and (
+                    value is None
+                    or value == accessory.getprop(exprop)
+                )
+                and store.mas_SELisUnlocked(accessory)
+            ):
+                acs_pool.append(accessory)
+
+        if exprop in exprops_map:
+            for accessory in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(accessory):
+                    acs_pool.append(accessory)
+
+        if len(acs_pool) < 1:
+            return None
+
+        elif len(acs_pool) < 2:
+            return acs_pool[0]
+
+        else:
+            return acs_pool
+
+    def hasUnlockedACSOfExprop(exprop, value=None):
+        """
+        Checks if we have unlocked ACS with a specific exprop
+
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            boolean:
+                True if we have unlocked ACS with the exprop + value provided
+                False otherwise
+        """
+
+        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
+
+        exprops_map = {
+            "light": __BUILTIN_LIGHT_BRACELET_ACS,
+            "dark": __BUILTIN_DARK_BRACELET_ACS
+        }
+
+        for acs_name in store.mas_sprites.ACS_MAP:
+            accessory = store.mas_sprites.ACS_MAP[acs_name]
+            if (
+                accessory.hasprop(exprop)
+                and (
+                    value is None
+                    or value == accessory.getprop(exprop)
+                )
+                and store.mas_SELisUnlocked(accessory)
+            ):
+                return True
+
+        if exprop in exprops_map:
+            for accessory in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(accessory):
+                    return True
+
+        return False
+
 init 1 python in ahc_utils:
     def shouldChangeBracelet():
         """
@@ -488,27 +634,37 @@ init 1 python in ahc_utils:
         if (
             isWearingClothesOfExprop("light bracelet")
             and isWearingClothesOfExprop("dark bracelet")
-            and (_current_bracelet.name == "flower_bracelet_dark" or _current_bracelet.name == "flower_bracelet_light")
+            and (_current_bracelet.hasprop('light') or _current_bracelet.hasprop('dark'))
         ):
             if (
-                _current_bracelet.name == "flower_bracelet_dark"
-                and has_and_unlocked("flower_bracelet_light")
+                _current_bracelet.hasprop('dark')
+                and hasUnlockedACSOfExprop('light')
                 and renpy.random.randint(1,5) == 1
             ):
-                store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
+                store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("light").name)
 
             elif (
-                _current_bracelet.name == "flower_bracelet_light"
-                and has_and_unlocked("flower_bracelet_dark")
+                _current_bracelet.hasprop('light')
+                and hasUnlockedACSOfExprop('dark')
                 and renpy.random.randint(1,5) == 1
             ):
-                store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
+                store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("dark").name)
 
-        elif isWearingClothesOfExprop("light bracelet") and _current_bracelet.name == "flower_bracelet_dark" and has_and_unlocked("flower_bracelet_light"):
-            store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
-        elif isWearingClothesOfExprop("dark bracelet") and _current_bracelet.name == "flower_bracelet_light" and has_and_unlocked("flower_bracelet_dark"):
-            store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
-        elif isWearingClothesOfExprop("no bracelet") and _current_bracelet.name in ["flower_bracelet_dark", "flower_bracelet_light"]:
+        elif (
+            isWearingClothesOfExprop("light bracelet")
+            and not _current_bracelet.hasprop('light')
+            and hasUnlockedACSOfExprop('light')
+        ):
+            store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("light").name)
+
+        elif (
+            isWearingClothesOfExprop("dark bracelet")
+            and not _current_bracelet.hasprop('dark')
+            and hasUnlockedACSOfExprop('dark')
+        ):
+            store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("dark").name)
+
+        elif isWearingClothesOfExprop("no bracelet"):
             store.monika_chr.remove_acs(_current_bracelet)
 
         return
@@ -627,31 +783,8 @@ init 999 python in ahc_utils:
             if store.mas_isSpecialDay():
                 changeClothesOfExprop("formal")
 
-            #We need to verify that auto atmos change is installed before accessing its code
-            elif store.mas_isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
-                min_temp = store.awc_getTemperature(temp="temp_min")
-
-                if min_temp < TEMP_COOL_MIN:
-                    changeClothesOfExprop("jacket")
-
-                elif TEMP_COOL_MIN <= min_temp <= TEMP_COOL_MAX:
-                    changeClothesOfExprop("sweater")
-
-                else:
-                    changeClothesOfExprop("date")
-
             else:
-                #Since we don't have weather apis to work with, we'll use blankets for summer/winter/fall/spring
-                if store.mas_isWinter():
-                    changeClothesOfExprop("jacket")
-
-                #Summer gets date clothes (i.e. warm)
-                elif store.mas_isSummer():
-                    changeClothesOfExprop("date")
-
-                #Spring and Fall both get sweater
-                else:
-                    changeClothesOfExprop("sweater")
+                changeClothesOfExprop(getClothesExpropForTemperature(indoor=False))
 
             #Check if we should change or remove the bracelet
             shouldChangeBracelet()
@@ -674,15 +807,18 @@ init 999 python in ahc_utils:
                 and "no_cloth_change" not in store.mas_getEVLPropValue(store.selected_greeting, "rules", {})
             )
         ):
+
+            _clothes_exprop = getClothesExpropForTemperature()
+
             if (
                 (
                     store.mas_isDayNow()
-                    and (shouldChangeHair('day') or shouldChangeClothes('home'))
+                    and (shouldChangeHair('day') or shouldChangeClothes(_clothes_exprop))
                     and not hasHairPonytailRun()
                 )
                 or (
                     store.mas_isNightNow()
-                    and (shouldChangeHair('night') or shouldChangeClothes('home'))
+                    and (shouldChangeHair('night') or shouldChangeClothes(_clothes_exprop))
                     and not hasHairDownRun()
                 )
             ):
@@ -697,7 +833,12 @@ init 999 python in ahc_utils:
                     _day_cycle = "night"
                     _ahc_label = "monika_sethair_down"
 
-                changeHairAndClothes(_day_cycle=_day_cycle, _hair_random_chance=_hair_random_chance, _clothes_random_chance=_clothes_random_chance)
+                changeHairAndClothes(
+                    _day_cycle=_day_cycle,
+                    _hair_random_chance=_hair_random_chance,
+                    _clothes_random_chance=_clothes_random_chance,
+                    _exprop=_clothes_exprop
+                )
 
                 _ahc_label_ev = store.mas_getEV(_ahc_label)
 
@@ -850,11 +991,11 @@ init 3 python in ahc_utils:
         return (
             (
                 (
-                    len(eval("get{0}Hair()".format(hair_type.capitalize()))) > 1
-                    and isWearingDayHair()
-                    and isWearingNightHair()
-                )
-                or not eval("isWearing{0}Hair()".format(hair_type.capitalize()))
+                len(eval("get{0}Hair()".format(hair_type.capitalize()))) > 1
+                and isWearingDayHair()
+                and isWearingNightHair()
+            )
+            or not eval("isWearing{0}Hair()".format(hair_type.capitalize()))
             )
             and not store.persistent._mas_force_hair
         )
@@ -871,7 +1012,7 @@ init 3 python in ahc_utils:
 
 init 4 python in ahc_utils:
 
-    def changeHairAndClothes(_day_cycle, _hair_random_chance, _clothes_random_chance):
+    def changeHairAndClothes(_day_cycle, _hair_random_chance, _clothes_random_chance, _exprop):
         """
         Allows Monika to change her hair and clothes depending on day cycle and random chance.
         IN:
@@ -879,11 +1020,13 @@ init 4 python in ahc_utils:
                 The day cycle that corresponds to the type of hair/clothes we want Monika to change to.
                 (Acceptable values: 'day', 'night')
             _hair_random_chance:
-                Random chance that determins whether Monika should change her hair.
+                Random chance that determines whether Monika should change her hair.
                 If _hair_random_chance is 1 then Monika keeps the current hairstyle.
             _clothes_random_chance:
-                Random chance that determins whether Monika should change her clothes.
+                Random chance that determines whether Monika should change her clothes.
                 If _clothes_random_chance is 1 then Monika keeps the current outfit.
+            _exprop:
+                Exprop that determines what kind of outfits Monika can change into.
         """
 
         if _day_cycle.lower() not in ["day", "night"]:
@@ -900,13 +1043,13 @@ init 4 python in ahc_utils:
 
         # Change clothes section
         if (
-            shouldChangeClothes("home")
+            shouldChangeClothes(_exprop)
             and (
-                not isWearingClothesOfExprop("home")
-                or (isWearingClothesOfExprop("home") and _clothes_random_chance != 1)
+                not isWearingClothesOfExprop(_exprop)
+                or (isWearingClothesOfExprop(_exprop) and _clothes_random_chance != 1)
             )
         ):
-            changeClothesOfExprop(exprop="home", chance=False)
+            changeClothesOfExprop(exprop=_exprop, chance=False)
 
             prev_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
@@ -933,11 +1076,11 @@ init 4 python in ahc_utils:
         if (
             (
                 (
-                    len(eval("get{0}Hair()".format(_day_cycle.capitalize()))) > 1
-                    and isWearingDayHair()
-                    and isWearingNightHair()
-                    and _hair_random_chance != 1
-                )
+                len(eval("get{0}Hair()".format(_day_cycle.capitalize()))) > 1
+                and isWearingDayHair()
+                and isWearingNightHair()
+                and _hair_random_chance != 1
+            )
             or not eval("isWearing{0}Hair()".format(_day_cycle.capitalize()))
             )
             and not store.persistent._mas_force_hair
@@ -993,10 +1136,11 @@ init 50 python:
         hairup_ev = mas_getEV("monika_sethair_ponytail")
 
         hairup_ev.conditional=(
-                "mas_isDayNow() "
-                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
-                "and not store.ahc_utils.hasHairPonytailRun() "
-            )
+            "mas_isDayNow() "
+            "and (store.ahc_utils.shouldChangeHair('day') "
+            "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
+            "and not store.ahc_utils.hasHairPonytailRun() "
+        )
         hairup_ev.action = EV_ACT_PUSH
 
     def ahc_recond_down():
@@ -1006,12 +1150,12 @@ init 50 python:
         hairdown_ev = mas_getEV("monika_sethair_down")
 
         hairdown_ev.conditional=(
-                "mas_isNightNow() "
-                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
-                "and (not store.ahc_utils.hasHairDownRun() "
-                "or (store.mas_globals.returned_home_this_sesh "
-                "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
-            )
+            "mas_isNightNow() "
+            "and (store.ahc_utils.shouldChangeHair('night') "
+            "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
+            "and (not store.ahc_utils.hasHairDownRun() "
+            "or store.mas_globals.ahc_run_after_date) "
+        )
         hairdown_ev.action = EV_ACT_PUSH
 
 
@@ -1025,7 +1169,8 @@ init 5 python:
             eventlabel="monika_sethair_ponytail",
             conditional=(
                 "mas_isDayNow() "
-                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and (store.ahc_utils.shouldChangeHair('day') "
+                "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
                 "and not store.ahc_utils.hasHairPonytailRun() "
             ),
             action=EV_ACT_PUSH,
@@ -1048,13 +1193,14 @@ label monika_sethair_ponytail:
 
     $ _hair_random_chance = renpy.random.randint(1,4)
     $ _clothes_random_chance = renpy.random.randint(1,3)
+    $ _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
 
     if (
         (
-            store.ahc_utils.shouldChangeClothes("home")
+            store.ahc_utils.shouldChangeClothes(_clothes_exprop)
             and (
-                not store.ahc_utils.isWearingClothesOfExprop("home")
-                or (store.ahc_utils.isWearingClothesOfExprop("home") and _clothes_random_chance != 1)
+                not store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop)
+                or (store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop) and _clothes_random_chance != 1)
             )
         )
         or (
@@ -1084,7 +1230,8 @@ label monika_sethair_ponytail:
             store.ahc_utils.changeHairAndClothes(
                 _day_cycle="day",
                 _hair_random_chance=_hair_random_chance,
-                _clothes_random_chance=_clothes_random_chance
+                _clothes_random_chance=_clothes_random_chance,
+                _exprop=_clothes_exprop
             )
 
             renpy.pause(4.0, hard=True)
@@ -1101,6 +1248,7 @@ label monika_sethair_ponytail:
 
     return
 
+#TODO: replace the sesh length check with something better
 
 init 5 python:
     addEvent(
@@ -1109,10 +1257,10 @@ init 5 python:
             eventlabel="monika_sethair_down",
             conditional=(
                 "mas_isNightNow() "
-                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
+                "and (store.ahc_utils.shouldChangeHair('night') "
+                "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
                 "and (not store.ahc_utils.hasHairDownRun() "
-                "or (store.mas_globals.returned_home_this_sesh "
-                "and mas_getSessionLength() <= datetime.timedelta(minutes=1))) "
+                "or store.mas_globals.ahc_run_after_date) "
             ),
             action=EV_ACT_PUSH,
             show_in_idle=True,
@@ -1126,18 +1274,23 @@ label monika_sethair_down:
     #Need to recondition/action this
     $ ahc_recond_down()
 
+    #Reset our global var here
+    if store.mas_globals.ahc_run_after_date:
+        $ store.mas_globals.ahc_run_after_date = False
+
     if mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today() or mas_isO31():
         return
 
     $ _hair_random_chance = renpy.random.randint(1,4)
     $ _clothes_random_chance = "1" if mas_isF14() else renpy.random.randint(1,3)
+    $ _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
 
     if (
         (
-            store.ahc_utils.shouldChangeClothes("home")
+            store.ahc_utils.shouldChangeClothes(_clothes_exprop)
             and (
-                not store.ahc_utils.isWearingClothesOfExprop("home")
-                or (store.ahc_utils.isWearingClothesOfExprop("home") and _clothes_random_chance != 1)
+                not store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop)
+                or (store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop) and _clothes_random_chance != 1)
             )
         )
         or (
@@ -1165,7 +1318,8 @@ label monika_sethair_down:
             store.ahc_utils.changeHairAndClothes(
                 _day_cycle="night",
                 _hair_random_chance=_hair_random_chance,
-                _clothes_random_chance=_clothes_random_chance
+                _clothes_random_chance=_clothes_random_chance,
+                _exprop=_clothes_exprop
             )
 
             renpy.pause(4.0, hard=True)
