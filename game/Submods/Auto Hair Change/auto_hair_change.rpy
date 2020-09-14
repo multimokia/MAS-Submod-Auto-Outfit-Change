@@ -734,7 +734,7 @@ init 2 python in ahc_utils:
 
         return
 
-init 6 python:
+init 7 python:
 
     # Update the rules of these greetings so that she doesn't change on her own on startup, if any of these are chosen
 
