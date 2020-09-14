@@ -1218,7 +1218,7 @@ label monika_sethair_ponytail:
             m 3eua "I'm going to get ready for today.{w=0.5}.{w=0.5}.{w=1}{nw}"
 
         else:
-            m 1eua "Give me a second, [player]."
+            m 1eua "Give me a second, [mas_get_player_nickname()]."
             m 3eua "I'm just getting myself ready for the day.{w=0.5}.{w=0.5}.{nw}"
 
         window hide
@@ -1245,10 +1245,7 @@ label monika_sethair_ponytail:
         else:
             m 3hub "All done!"
             m 1eua "If you want me to change my hairstyle, just ask, okay?"
-
     return
-
-#TODO: replace the sesh length check with something better
 
 init 5 python:
     addEvent(
@@ -1281,8 +1278,9 @@ label monika_sethair_down:
     if mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today() or mas_isO31():
         return
 
+    #NOTE: The random chances here are for chance to NOT change
     $ _hair_random_chance = renpy.random.randint(1,4)
-    $ _clothes_random_chance = "1" if mas_isF14() else renpy.random.randint(1,3)
+    $ _clothes_random_chance = 1 if mas_isF14() else renpy.random.randint(1,3)
     $ _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
 
     if (
@@ -1334,7 +1332,7 @@ label monika_sethair_down:
             m 1eua "That feels much better."
             if not renpy.has_label('monika_welcome_home'):
                 show monika 5eua at t11 zorder MAS_MONIKA_Z with dissolve_monika
-                m 5eua "Let's have a nice evening together, [player]."
+                m 5eua "Let's have a nice evening together, [mas_get_player_nickname()]."
 
             else:
                 show monika 5hua at t11 zorder MAS_MONIKA_Z with dissolve_monika
