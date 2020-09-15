@@ -1,12 +1,10 @@
 init -990 python in mas_submod_utils:
     ahc_submod = Submod(
-        author="multimokia", #And Legendkiller21 (Don't want to break update scripts)
-        name="Auto Hair Change",
+        author="multimokia and Legendkiller21",
+        name="Auto Outfit Change",
         description="A submod which allows Monika to pick her own hairstyles for day and night.",
-        version="3.0.1",
-        version_updates={
-            "multimokia_auto_hair_change_v2_3_0": "multimokia_auto_hair_change_v2_3_1"
-        },
+        version="3.0.2",
+        version_updates={},
         settings_pane="auto_hair_change_settings_screen"
     )
 
@@ -23,6 +21,8 @@ init -989 python in ahc_utils:
             update_dir="",
             attachment_id=None,
         )
+
+#START: Update scripts (when we have them)
 
 init -1 python:
     tt_when_to_update = (
@@ -45,47 +45,6 @@ screen auto_hair_change_settings_screen():
                 action Function(store.ahc_utils.__updateJsons)
                 hovered SetField(submods_screen_tt, "value", tt_when_to_update)
                 unhovered SetField(submods_screen_tt, "value", submods_screen_tt.default)
-
-#START: Update scripts
-label multimokia_auto_hair_change_v2_3_0(version="v2_3_0"):
-    return
-
-label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
-    python:
-        ahc_utils.__updateJsons()
-
-        hairdown_ev = mas_getEV("monika_sethair_down")
-
-        if hairdown_ev:
-            correct_conditional=(
-                "mas_isNightNow() "
-                "and (store.ahc_utils.shouldChangeHair('night') or store.ahc_utils.shouldChangeClothes('home')) "
-                "and (not store.ahc_utils.hasHairDownRun() "
-                "or store.mas_globals.ahc_run_after_date) "
-            )
-
-            if hairdown_ev.conditional != correct_conditional:
-                hairdown_ev.conditional = correct_conditional
-
-            if hairdown_ev.action != EV_ACT_PUSH:
-                hairdown_ev.action = EV_ACT_PUSH
-
-        hairponytail_ev = mas_getEV("monika_sethair_ponytail")
-
-        if hairponytail_ev:
-            correct_conditional=(
-                "mas_isDayNow() "
-                "and (store.ahc_utils.shouldChangeHair('day') or store.ahc_utils.shouldChangeClothes('home')) "
-                "and not store.ahc_utils.hasHairPonytailRun() "
-            )
-
-            if hairponytail_ev.conditional != correct_conditional:
-                hairponytail_ev.conditional = correct_conditional
-
-            if hairponytail_ev.action != EV_ACT_PUSH:
-                hairponytail_ev.action = EV_ACT_PUSH
-
-    return
 
 init python:
     #init these vars here to prevent crashes if we update from pre-submod framework version
@@ -170,7 +129,9 @@ init python in ahc_utils:
         "velius94_clothes_dress_whitenavyblue.json": {"home": True, "date": True, "light bracelet": True, "dark bracelet": True},
         "finale_hoodie_green.json": {"sweater": True, "no bracelet": True},
         "velius94_acs_flower_bracelet_light.json": {"light": True},
-        "velius94_acs_flower_bracelet_dark.json": {"dark": True}
+        "velius94_acs_flower_bracelet_dark.json": {"dark": True},
+        "finale_shirt_blue": {"home": True},
+        "velius94_shirt_pink": {"home": True, "date": True}
     }
 
     def __updateJsons():
