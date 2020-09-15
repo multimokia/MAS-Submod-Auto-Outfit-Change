@@ -87,6 +87,14 @@ label multimokia_auto_hair_change_v2_3_1(version="v2_3_1"):
 
     return
 
+init python:
+    #init these vars here to prevent crashes if we update from pre-submod framework version
+    try:
+        mas_clothes_rin
+    except:
+        mas_clothes_rin = None
+    morning_flag = None
+
 init -1 python in mas_globals:
     ahc_run_after_date = bool(store.persistent._mas_moni_chksum)
 
@@ -801,7 +809,7 @@ init 999 python in ahc_utils:
         if (
             not store.mas_globals.returned_home_this_sesh
             and (
-                store.mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() != datetime.date.today()
+                check_first_day_d25s()
                 and not store.mas_isO31()
                 and not store.mas_isF14()
                 and "no_cloth_change" not in store.mas_getEVLPropValue(store.selected_greeting, "rules", {})
@@ -1104,6 +1112,17 @@ init 4 python in ahc_utils:
             store.monika_chr.remove_acs(thermos_acs)
             store.mas_rmallEVL("mas_consumables_remove_thermos")
 
+init 8 python in ahc_utils:
+
+    def check_first_day_d25s():
+        """
+        Checks if today is the first day of the d25 season
+
+        OUT:
+            True if today is the first day of d25s, False otherwise
+        """
+        hol_intro_last_seen = store.mas_getEVL_last_seen("mas_d25_monika_holiday_intro")
+        return hol_intro_last_seen and hol_intro_last_seen.date() == datetime.date.today()
 
 init -2 python in mas_sprites:
     import store
@@ -1176,7 +1195,8 @@ init 5 python:
             action=EV_ACT_PUSH,
             show_in_idle=True,
             rules={"skip alert": None}
-        )
+        ),
+        restartBlacklist=True
     )
 
 label monika_sethair_ponytail:
@@ -1185,7 +1205,7 @@ label monika_sethair_ponytail:
     $ ahc_recond_ponytail()
 
     if (
-        mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today()
+        store.ahc_utils.check_first_day_d25s()
         or mas_isO31()
         or mas_isF14()
     ):
@@ -1262,7 +1282,8 @@ init 5 python:
             action=EV_ACT_PUSH,
             show_in_idle=True,
             rules={"skip alert": None}
-        )
+        ),
+        restartBlacklist=True
     )
 
 
@@ -1275,7 +1296,7 @@ label monika_sethair_down:
     if store.mas_globals.ahc_run_after_date:
         $ store.mas_globals.ahc_run_after_date = False
 
-    if mas_getEVL_last_seen("mas_d25_monika_holiday_intro").date() == datetime.date.today() or mas_isO31():
+    if store.ahc_utils.check_first_day_d25s() or mas_isO31():
         return
 
     #NOTE: The random chances here are for chance to NOT change
