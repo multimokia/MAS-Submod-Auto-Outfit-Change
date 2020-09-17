@@ -1119,9 +1119,9 @@ init 50 python:
 
         hairup_ev.conditional=(
             "mas_isDayNow() "
+            "and not store.ahc_utils.hasHairPonytailRun() "
             "and (store.ahc_utils.shouldChangeHair('day') "
             "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
-            "and not store.ahc_utils.hasHairPonytailRun() "
         )
         hairup_ev.action = EV_ACT_PUSH
 
@@ -1133,10 +1133,10 @@ init 50 python:
 
         hairdown_ev.conditional=(
             "mas_isNightNow() "
-            "and (store.ahc_utils.shouldChangeHair('night') "
-            "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
             "and (not store.ahc_utils.hasHairDownRun() "
             "or store.mas_globals.ahc_run_after_date) "
+            "and (store.ahc_utils.shouldChangeHair('night') "
+            "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
         )
         hairdown_ev.action = EV_ACT_PUSH
 
@@ -1151,9 +1151,9 @@ init 5 python:
             eventlabel="monika_sethair_ponytail",
             conditional=(
                 "mas_isDayNow() "
+                "and not store.ahc_utils.hasHairPonytailRun() "
                 "and (store.ahc_utils.shouldChangeHair('day') "
                 "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
-                "and not store.ahc_utils.hasHairPonytailRun() "
             ),
             action=EV_ACT_PUSH,
             show_in_idle=True,
@@ -1237,10 +1237,10 @@ init 5 python:
             eventlabel="monika_sethair_down",
             conditional=(
                 "mas_isNightNow() "
-                "and (store.ahc_utils.shouldChangeHair('night') "
-                "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
                 "and (not store.ahc_utils.hasHairDownRun() "
                 "or store.mas_globals.ahc_run_after_date) "
+                "and (store.ahc_utils.shouldChangeHair('night') "
+                "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
             ),
             action=EV_ACT_PUSH,
             show_in_idle=True,
