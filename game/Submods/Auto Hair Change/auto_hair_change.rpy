@@ -174,13 +174,15 @@ init python in ahc_utils:
                 list() of MASHair objects which need to be filtered
 
         OUT:
-            list() of MASHair objects which are compatible with the current outfit
-        NOTE: Does NOT check if unlocked
+            list() of MASHair objects which are unlocked and compatible with the current outfit
         """
         return [
             hair
             for hair in hair_list
-            if store.mas_sprites.is_clotheshair_compatible(store.monika_chr.clothes, hair)
+            if (
+                store.mas_selspr.HAIR_SEL_MAP[hair.name].unlocked
+                and store.mas_sprites.is_clotheshair_compatible(store.monika_chr.clothes, hair)
+            )
         ]
 
     def getDayHair():
