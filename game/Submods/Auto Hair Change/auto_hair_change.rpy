@@ -130,8 +130,8 @@ init python in ahc_utils:
         "finale_hoodie_green.json": {"sweater": True, "no bracelet": True},
         "velius94_acs_flower_bracelet_light.json": {"light": True},
         "velius94_acs_flower_bracelet_dark.json": {"dark": True},
-        "finale_shirt_blue": {"home": True},
-        "velius94_shirt_pink": {"home": True, "date": True}
+        "finale_clothes_shirt_blue.json": {"home": True},
+        "velius94_clothes_shirt_pink.json": {"home": True, "date": True}
     }
 
     def __updateJsons():
