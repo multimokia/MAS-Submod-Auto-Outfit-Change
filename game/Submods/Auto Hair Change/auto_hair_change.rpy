@@ -334,92 +334,6 @@ init python in ahc_utils:
 
 
     # Clothes stuff
-    def getRandOutfitOfExprop(exprop, value=None):
-        """
-        IN:
-            exprop - exprop to look for
-            value - value the exprop should be. Set to None to ignore.
-            (Default: None)
-
-        OUT:
-            A random unlocked cloth of a specific exprop
-        """
-
-        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
-
-        exprops_map = {
-            "home": __BUILTIN_HOME_CLOTHES,
-            "date": __BUILTIN_DATE_CLOTHES,
-            "formal": __BUILTIN_FORMAL_CLOTHES,
-            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
-            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
-        }
-
-        clothes_pool = []
-
-        clothes_with_exprop = store.MASClothes.by_exprop(exprop, value)
-
-        for clothes in clothes_with_exprop:
-            if store.mas_SELisUnlocked(clothes):
-                clothes_pool.append(clothes)
-
-        if exprop in exprops_map:
-            for clothes in exprops_map[exprop]:
-                if store.mas_SELisUnlocked(clothes):
-                    clothes_pool.append(clothes)
-
-        if len(clothes_pool) < 1:
-            return None
-
-        elif len(clothes_pool) < 2:
-            return clothes_pool[0]
-
-        else:
-            return random.choice(clothes_pool)
-
-    def getOutfitsOfExprop(exprop, value=None):
-        """
-        IN:
-            exprop - exprop to look for
-            value - value the exprop should be. Set to None to ignore.
-            (Default: None)
-
-        OUT:
-            A list of unlocked clothes of a specific exprop
-        """
-
-        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
-
-        exprops_map = {
-            "home": __BUILTIN_HOME_CLOTHES,
-            "date": __BUILTIN_DATE_CLOTHES,
-            "formal": __BUILTIN_FORMAL_CLOTHES,
-            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
-            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
-        }
-
-        clothes_pool = []
-
-        clothes_with_exprop = store.MASClothes.by_exprop(exprop, value)
-
-        for clothes in clothes_with_exprop:
-            if store.mas_SELisUnlocked(clothes):
-                clothes_pool.append(clothes)
-
-        if exprop in exprops_map:
-            for clothes in exprops_map[exprop]:
-                if store.mas_SELisUnlocked(clothes):
-                    clothes_pool.append(clothes)
-
-        if len(clothes_pool) < 1:
-            return None
-
-        elif len(clothes_pool) < 2:
-            return clothes_pool[0]
-
-        else:
-            return clothes_pool
-
     def hasUnlockedClothesOfExprop(exprop, value=None):
         """
         Checks if we have unlocked clothes with a specific exprop
@@ -456,100 +370,64 @@ init python in ahc_utils:
 
         return False
 
+    def getOutfitsOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A list of unlocked clothes of a specific exprop
+        """
+
+        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
+
+        exprops_map = {
+            "home": __BUILTIN_HOME_CLOTHES,
+            "date": __BUILTIN_DATE_CLOTHES,
+            "formal": __BUILTIN_FORMAL_CLOTHES,
+            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
+            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+        }
+
+        # if there are no unlocked outfits then return
+        if not hasUnlockedClothesOfExprop(exprop, value):
+            return None
+
+        clothes_pool = []
+
+        clothes_with_exprop = store.MASClothes.by_exprop(exprop, value)
+
+        for clothes in clothes_with_exprop:
+            if store.mas_SELisUnlocked(clothes):
+                clothes_pool.append(clothes)
+
+        if exprop in exprops_map:
+            for clothes in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(clothes):
+                    clothes_pool.append(clothes)
+
+        return clothes_pool
+
+
+    def getRandOutfitOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A random unlocked cloth of a specific exprop
+        """
+
+        clothes_pool = getOutfitsOfExprop(exprop, value)
+
+        if clothes_pool:
+            return random.choice(clothes_pool)
 
     # ACS stuff
-    def getRandACSOfExprop(exprop, value=None):
-        """
-        IN:
-            exprop - exprop to look for
-            value - value the exprop should be. Set to None to ignore.
-            (Default: None)
-
-        OUT:
-            A random unlocked acs of a specific exprop
-        """
-
-        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
-
-        exprops_map = {
-            "light": __BUILTIN_LIGHT_BRACELET_ACS,
-            "dark": __BUILTIN_DARK_BRACELET_ACS
-        }
-
-        acs_pool = []
-
-        for acs_name in store.mas_sprites.ACS_MAP:
-            accessory = store.mas_sprites.ACS_MAP[acs_name]
-            if (
-                accessory.hasprop(exprop)
-                and (
-                    value is None
-                    or value == accessory.getprop(exprop)
-                )
-                and store.mas_SELisUnlocked(accessory)
-            ):
-                acs_pool.append(accessory)
-
-        if exprop in exprops_map:
-            for accessory in exprops_map[exprop]:
-                if store.mas_SELisUnlocked(accessory):
-                    acs_pool.append(accessory)
-
-        if len(acs_pool) < 1:
-            return None
-
-        elif len(acs_pool) < 2:
-            return acs_pool[0]
-
-        else:
-            return random.choice(acs_pool)
-
-    def getACSOfExprop(exprop, value=None):
-        """
-        IN:
-            exprop - exprop to look for
-            value - value the exprop should be. Set to None to ignore.
-            (Default: None)
-
-        OUT:
-            A list of unlocked ACS of a specific exprop
-        """
-
-        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
-
-        exprops_map = {
-            "light": __BUILTIN_LIGHT_BRACELET_ACS,
-            "dark": __BUILTIN_DARK_BRACELET_ACS
-        }
-
-        acs_pool = []
-
-        for acs_name in store.mas_sprites.ACS_MAP:
-            accessory = store.mas_sprites.ACS_MAP[acs_name]
-            if (
-                accessory.hasprop(exprop)
-                and (
-                    value is None
-                    or value == accessory.getprop(exprop)
-                )
-                and store.mas_SELisUnlocked(accessory)
-            ):
-                acs_pool.append(accessory)
-
-        if exprop in exprops_map:
-            for accessory in exprops_map[exprop]:
-                if store.mas_SELisUnlocked(accessory):
-                    acs_pool.append(accessory)
-
-        if len(acs_pool) < 1:
-            return None
-
-        elif len(acs_pool) < 2:
-            return acs_pool[0]
-
-        else:
-            return acs_pool
-
     def hasUnlockedACSOfExprop(exprop, value=None):
         """
         Checks if we have unlocked ACS with a specific exprop
@@ -591,52 +469,134 @@ init python in ahc_utils:
 
         return False
 
+    def getACSOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A list of unlocked ACS of a specific exprop
+        """
+
+        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
+
+        exprops_map = {
+            "light": __BUILTIN_LIGHT_BRACELET_ACS,
+            "dark": __BUILTIN_DARK_BRACELET_ACS
+        }
+
+        # if there are no unlocked ACS then return
+        if not hasUnlockedACSOfExprop(exprop, value):
+            return None
+
+        acs_pool = [
+            acs
+            for acs in store.mas_sprites.ACS_MAP.itervalues()
+            if acs.hasprop(exprop) and (value is None or value == acs.getprop(exprop)) and store.mas_SELisUnlocked(acs)
+        ]
+
+        if exprop in exprops_map:
+            for accessory in exprops_map[exprop]:
+                if store.mas_SELisUnlocked(accessory):
+                    acs_pool.append(accessory)
+
+        return acs_pool
+
+    def getRandACSOfExprop(exprop, value=None):
+        """
+        IN:
+            exprop - exprop to look for
+            value - value the exprop should be. Set to None to ignore.
+            (Default: None)
+
+        OUT:
+            A random unlocked acs of a specific exprop
+        """
+
+        acs_pool = getACSOfExprop(exprop, value)
+
+        if acs_pool:
+            return random.choice(acs_pool)
+
+        return None
+
 init 1 python in ahc_utils:
     def shouldChangeBracelet():
         """
         Checks whether the current bracelet matches the current outfit and wears the right bracelet if not
         """
 
+        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
+
+        #Get our current bracelet
         _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
-        if not _current_bracelet:
-            return
+        _random_chance = renpy.random.randint(1,4) == 1
 
-        if (
-            isWearingClothesOfExprop("light bracelet")
-            and isWearingClothesOfExprop("dark bracelet")
-            and (_current_bracelet.hasprop('light') or _current_bracelet.hasprop('dark'))
-        ):
-            if (
-                _current_bracelet.hasprop('dark')
-                and hasUnlockedACSOfExprop('light')
-                and renpy.random.randint(1,5) == 1
-            ):
-                store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("light").name)
+        _should_wear_bracelet_of_type = None
 
-            elif (
-                _current_bracelet.hasprop('light')
-                and hasUnlockedACSOfExprop('dark')
-                and renpy.random.randint(1,5) == 1
-            ):
-                store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("dark").name)
+        _is_wearing_light_bracelet = _current_bracelet.hasprop('light') or _current_bracelet in __BUILTIN_LIGHT_BRACELET_ACS
+        _is_wearing_dark_bracelet = _current_bracelet.hasprop('dark') or _current_bracelet in __BUILTIN_DARK_BRACELET_ACS
 
-        elif (
-            isWearingClothesOfExprop("light bracelet")
-            and not _current_bracelet.hasprop('light')
-            and hasUnlockedACSOfExprop('light')
-        ):
-            store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("light").name)
+        if isWearingClothesOfExprop("light bracelet"):
+            _is_wearing_light_clothes = True
+            _should_wear_bracelet_of_type = "light"
+        if isWearingClothesOfExprop("dark bracelet"):
+            _is_wearing_dark_clothes = True
+            if _should_wear_bracelet_of_type:
+                _should_wear_bracelet_of_type = "both"
+            else:
+                _should_wear_bracelet_of_type = "dark"
 
-        elif (
-            isWearingClothesOfExprop("dark bracelet")
-            and not _current_bracelet.hasprop('dark')
-            and hasUnlockedACSOfExprop('dark')
-        ):
-            store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop("dark").name)
-
-        elif isWearingClothesOfExprop("no bracelet"):
+        # If the outfit should not have a bracelet and Monika wears one, then remove it
+        if isWearingClothesOfExprop("no bracelet") and _current_bracelet:
             store.monika_chr.remove_acs(_current_bracelet)
+
+        # Monika is wearing clothes of both types
+        elif _should_wear_bracelet_of_type == "both":
+            if renpy.random.randint(0,1):
+                _should_wear_bracelet_of_type = "light"
+            else:
+                _should_wear_bracelet_of_type = "dark"
+
+            # Get the bracelet list
+            _bracelet_list = getACSOfExprop(_should_wear_bracelet_of_type)
+
+            if (
+                _bracelet_list
+                and (
+                    _random_chance
+                    and (_is_wearing_light_bracelet or _is_wearing_dark_bracelet)
+                    and _current_bracelet in _bracelet_list
+                    and len(_bracelet_list) >= 2
+                )
+                or not (_is_wearing_light_bracelet or _is_wearing_dark_bracelet)
+            ):
+                if _current_bracelet in _bracelet_list:
+                    _bracelet_list.remove(_current_bracelet)
+                store.mas_sprites._acs_wear_if_found(store.monika_chr, renpy.random.choice(_bracelet_list).name)
+
+        # Otherwise only one type fits the current outfit
+        elif _should_wear_bracelet_of_type:
+
+            # Get the bracelet list
+            _bracelet_list = getACSOfExprop(_should_wear_bracelet_of_type)
+
+            if _bracelet_list:
+                # If Monika already wears a bracelet there's a chance to change it
+                if _random_chance and "_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type):
+
+                    # Check if the current bracelet is in the list in case we ever have a bracelet that's part of an outfit
+                    # and that is not unlocked
+                    if _current_bracelet in _bracelet_list and len(_bracelet_list) >= 2:
+                        _bracelet_list.remove(_current_bracelet)
+                    store.mas_sprites._acs_wear_if_found(store.monika_chr, renpy.random.choice(_bracelet_list).name)
+
+                # Otherwise choose a bracelet if we have one unlocked
+                else:
+                    store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop(_should_wear_bracelet_of_type).name)
 
         return
 
@@ -678,30 +638,29 @@ init 2 python in ahc_utils:
         if not exprop or not hasUnlockedClothesOfExprop(exprop):
             return
 
-        # We assign a random value, other than 1, to this. This way, if chance is False, we're guarenteed to
-        # get in the elif block
-        _random_chance = 2
+        # Get the list with the outfits of the provided exprop
+        _clothes_list = getOutfitsOfExprop(exprop)
 
-        # Define this here so that we don't crash if we don't get in the below if/elif block
-        _new_clothes = None
+        # If the list is empty then return
+        if not _clothes_list:
+            return
 
-        if chance:
-            _random_chance = renpy.random.randint(1,3)
-
+        # If Monika is not wearing clothes of this exprop, choose a random one from the list
         if not isWearingClothesOfExprop(exprop):
-            _new_clothes = getRandOutfitOfExprop(exprop).name
+            store.mas_sprites._outfit_wear_if_gifted(store.monika_chr, renpy.random.choice(_clothes_list).name)
 
+        # If Monika is wearing clothes of this exprop and there are more than 2 outfits in the list,
+        # then depending on the chance var, she has a chance to change
         elif (
-            isWearingClothesOfExprop(exprop)
-            and isinstance(getOutfitsOfExprop(exprop), list)
-            and _random_chance != 1
+                (
+                (chance and renpy.random.randint(1,3) == 1)
+                or not chance
+            )
+            and isWearingClothesOfExprop(exprop)
+            and len(_clothes_list) >= 2
         ):
-            _clothes_list = getOutfitsOfExprop(exprop)
             _clothes_list.remove(store.monika_chr.clothes)
-            _new_clothes = renpy.random.choice(_clothes_list).name
-
-        if _new_clothes:
-            store.mas_sprites._outfit_wear_if_gifted(store.monika_chr, _new_clothes)
+            store.mas_sprites._outfit_wear_if_gifted(store.monika_chr, renpy.random.choice(_clothes_list).name)
 
         return
 
@@ -1022,26 +981,7 @@ init 4 python in ahc_utils:
         ):
             changeClothesOfExprop(exprop=_exprop, chance=False)
 
-            prev_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
-
-            if prev_bracelet:
-                shouldChangeBracelet()
-            else:
-
-                if (
-                    isWearingClothesOfExprop("dark bracelet")
-                    and isWearingClothesOfExprop("light bracelet")
-                ):
-                    if renpy.random.randint(1,2) == 1:
-                        store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
-                    else:
-                        store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
-
-                elif isWearingClothesOfExprop("dark bracelet"):
-                    store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_dark")
-
-                elif isWearingClothesOfExprop("light bracelet"):
-                    store.mas_sprites._acs_wear_if_found(store.monika_chr, "flower_bracelet_light")
+            shouldChangeBracelet()
 
         # Change hairstyle section
         if (
