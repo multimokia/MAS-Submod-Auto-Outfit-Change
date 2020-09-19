@@ -288,7 +288,16 @@ init python in ahc_utils:
         """
         #First, let's see if we have AAC
         if store.mas_submod_utils.isSubmodInstalled("Auto Atmos Change") and store.awc_canGetAPIWeath():
-            min_temp = store.awc_getTemperature(temp="temp_min")
+            try:
+                min_temp = store.awc_getTemperature(temp="temp_min")
+
+            #Set to None here as this will also be consistent with those who do update AAC, as that _default will be None
+            except:
+                min_temp = None
+
+            #If we couldn't get the temperature for any reason, we'll fall back to no-aac rules
+            if min_temp is None:
+                return no_aac_weather_exprop_get(indoor)
 
             #If the weather is below the cool thresh (cold), we'll opt for a jacket (unless indoors, in which case sweater)
             if min_temp <= TEMP_COLD_MAX:
@@ -302,36 +311,52 @@ init python in ahc_utils:
                 return "home" if indoor else "date"
 
         else:
-            #If it's winter, then this is simplified
-            if store.mas_isWinter():
-                return "sweater" if indoor else "jacket"
+            no_aac_weather_exprop_get(indoor)
 
-            #Likewise summer
-            elif store.mas_isSummer():
-                return "home" if indoor else "date"
+    def no_aac_weather_exprop_get(indoor):
+        """
+        This gets the clothes exprops for outfits when we do NOT have AAC installed, or we cannot get a reading from it
 
-            #Otherwise, we need to do a bit more work
+        IN:
+            indoor - Whether or not this is for indoor wear or outdoor weather
+
+        CONDITIONS:
+            - Fall: Always jacket outdoors when in the last month. Sweater indoors for that period
+            - Winter: Always jacket outdoors, sweater indoors
+            - Spring: Always jacket outdoors for the first month. Sweater indoors for that period
+
+        OUT:
+            string - exprop for clothes to use
+        """
+        #If it's winter, then this is simplified
+        if store.mas_isWinter():
+            return "sweater" if indoor else "jacket"
+
+        #Likewise summer
+        elif store.mas_isSummer():
+            return "home" if indoor else "date"
+
+        #Otherwise, we need to do a bit more work
+        else:
+            #Firstly, let's deal with hemispheres
+            if store.persistent._mas_pm_live_south_hemisphere:
+                winter_start = store.mas_summer_solstice
+                winter_end = store.mas_fall_equinox
             else:
-                #Firstly, let's deal with hemispheres
-                if store.persistent._mas_pm_live_south_hemisphere:
-                    winter_start = store.mas_summer_solstice
-                    winter_end = store.mas_fall_equinox
+                winter_start = store.mas_winter_solstice
+                winter_end = store.mas_spring_equinox
+
+            if store.mas_isSpring():
+                if datetime.date.today() <= store.mas_utils.add_months(winter_end, 1):
+                    return "sweater" if indoor else "jacket"
                 else:
-                    winter_start = store.mas_winter_solstice
-                    winter_end = store.mas_spring_equinox
+                    return "home" if indoor else "date"
 
-                if store.mas_isSpring():
-                    if datetime.date.today() <= store.mas_utils.add_months(winter_end, 1):
-                        return "sweater" if indoor else "jacket"
-                    else:
-                        return "home" if indoor else "date"
-
+            else:
+                if datetime.date.today() >= store.mas_utils.add_months(winter_start, -1):
+                    return "sweater" if indoor else "jacket"
                 else:
-                    if datetime.date.today() >= store.mas_utils.add_months(winter_start, -1):
-                        return "sweater" if indoor else "jacket"
-                    else:
-                        return "home" if indoor else "date"
-
+                    return "home" if indoor else "date"
 
     # Clothes stuff
     def getRandOutfitOfExprop(exprop, value=None):
