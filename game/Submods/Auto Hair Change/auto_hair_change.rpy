@@ -829,10 +829,7 @@ init 990 python in ahc_utils:
 
                 _ahc_label_ev = store.mas_getEV(_ahc_label)
 
-                if (
-                    _ahc_label_ev is not None
-                    and _ahc_label_ev.last_seen is not None
-                ):
+                if _ahc_label_ev is not None:
                     _ahc_label_ev.last_seen = datetime.datetime.now()
 
                 store.mas_rmEVL(_ahc_label)
