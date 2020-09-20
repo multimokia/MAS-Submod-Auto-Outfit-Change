@@ -301,7 +301,7 @@ init python in ahc_utils:
 
             #If the weather is below the cool thresh (cold), we'll opt for a jacket (unless indoors, in which case sweater)
             if min_temp <= TEMP_COLD_MAX:
-                return "sweater" if indoor else  "jacket"
+                return "sweater" if indoor else "jacket"
 
             #Otherwise, if it's chilly out, we'll have a sweater
             elif TEMP_COLD_MAX < min_temp <= TEMP_COOL_MAX:
@@ -311,7 +311,7 @@ init python in ahc_utils:
                 return "home" if indoor else "date"
 
         else:
-            no_aac_weather_exprop_get(indoor)
+            return no_aac_weather_exprop_get(indoor)
 
     def no_aac_weather_exprop_get(indoor):
         """
