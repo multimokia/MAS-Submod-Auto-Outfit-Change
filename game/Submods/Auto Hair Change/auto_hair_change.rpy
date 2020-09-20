@@ -555,7 +555,7 @@ init 1 python in ahc_utils:
 
         global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
 
-        #Get out current bracelet
+        #Get our current bracelet
         _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
         _random_chance = renpy.random.randint(1,4) == 1
@@ -717,7 +717,7 @@ init 990 python in ahc_utils:
         ):
             store.monika_chr.change_hair(renpy.random.choice(getDayHair()), by_user=False)
 
-        #We'll wear a ribbon if it's a special day and we're able to force and and it's not O31
+        #We'll wear a ribbon if it's a special day and we're able to force and it's not O31
         if (
             store.mas_isSpecialDay()
             and not store.mas_isO31()
@@ -763,7 +763,7 @@ init 990 python in ahc_utils:
                         else:
                             changeClothesOfExprop(getClothesExpropForTemperature(indoor=False))
 
-                # If we go for a date on O31 dates but not for ToT, get normal date clothes
+                # If we go for a date on O31 but not for ToT, get normal date clothes
                 elif store.mas_isO31():
                     changeClothesOfExprop(getClothesExpropForTemperature(indoor=False))
 
