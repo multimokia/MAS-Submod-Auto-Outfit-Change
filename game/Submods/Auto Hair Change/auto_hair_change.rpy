@@ -705,19 +705,22 @@ init 990 python in ahc_utils:
         Gets Monika ready for a date
         """
         #Make hair is either what player asked, or Moni's choice
+        #NOTE: _mas_setting_ocb is not a consistent way to check for outfit mode as
+        #change_clothes doesn't set this to True
         if (
             not store.persistent._mas_force_hair
             and not (
                 store.monika_chr.is_wearing_clothes_with_exprop("costume")
-                and persistent._mas_setting_ocb
+                and store.persistent._mas_setting_ocb
             )
             and not isWearingDayHair()
         ):
             store.monika_chr.change_hair(renpy.random.choice(getDayHair()), by_user=False)
 
-        #We'll wear a ribbon if it's a special day and we're able to force
+        #We'll wear a ribbon if it's a special day and we're able to force and and it's not O31
         if (
             store.mas_isSpecialDay()
+            and not store.mas_isO31()
             and (isWearingDayHair() and not isWearingDownHair())
             and not store.monika_chr.is_wearing_ribbon()
         ):
@@ -737,24 +740,32 @@ init 990 python in ahc_utils:
         if not store.persistent._mas_force_clothes or isWearingClothesOfExprop("lingerie"):
 
             if store.mas_isSpecialDay():
-                if store.mas_isF14() and mas_isDayNow():
+                if store.mas_isF14() and store.mas_isDayNow():
                     changeClothesOfExprop("date")
 
                 elif store.mas_farewells.dockstat_rtg_label == "bye_trick_or_treat_rtg":
                     if not store.ahc_utils.isWearingClothesOfExpropValue("o31"):
-                        _o31_outfits_list = MASClothes.by_exprop("costume", "o31")
+                        _o31_outfits_list = store.MASClothes.by_exprop("costume", "o31")
 
                         _current_o31_outfit = None
 
                         for costume in _o31_outfits_list:
-                            if persistent._mas_o31_costumes_worn.get(costume.name) == datetime.date.today().year:
+                            if store.persistent._mas_o31_costumes_worn.get(costume.name) == datetime.date.today().year:
                                 _current_o31_outfit = costume.name
                                 break
 
                         if _current_o31_outfit:
-                            store.mas_sprites._outfit_wear_if_gifted(store.monika_chr, _current_o31_outfit)
+                            store.mas_sprites._outfit_wear_if_gifted(
+                                store.monika_chr,
+                                _current_o31_outfit,
+                                outfit_mode=True)
+
                         else:
-                            changeClothesOfExprop("date")
+                            changeClothesOfExprop(getClothesExpropForTemperature(indoor=False))
+
+                # If we go for a date on O31 dates but not for ToT, get normal date clothes
+                elif store.mas_isO31():
+                    changeClothesOfExprop(getClothesExpropForTemperature(indoor=False))
 
                 else:
                     changeClothesOfExprop("formal")
@@ -1107,7 +1118,7 @@ init 4 python in ahc_utils:
         if Monika is wearing a D25 or O31 outfit.
         """
 
-        _current_outfit_props = _moni_chr.clothes.ex_props
+        _current_outfit_props = store.monika_chr.clothes.ex_props
 
         if not _current_outfit_props:
             return False
@@ -1115,6 +1126,7 @@ init 4 python in ahc_utils:
         for prop, prop_value in _current_outfit_props.iteritems():
             if prop_value == value.lower():
                 return True
+        return False
 
 init 8 python in ahc_utils:
 
@@ -1152,7 +1164,7 @@ init 8 python in ahc_utils:
             and not store.mas_lastSeenInYear("mas_d25_monika_holiday_intro")
             and store.mas_globals.ahc_run_after_date
             and hol_intro_last_seen.date() == datetime.date.today()
-            and persistent.sessions["last_session_end"] < hol_intro_last_seen.date()
+            and store.persistent.sessions["last_session_end"] < hol_intro_last_seen.date()
         )
 
 init 9 python in ahc_utils:
@@ -1177,27 +1189,27 @@ init 9 python in ahc_utils:
                 (
                 store.mas_isO31()
                 and (
-                    not persistent._mas_o31_in_o31_mode
+                    not store.persistent._mas_o31_in_o31_mode
                     or (store.ahc_utils.isWearingClothesOfExpropValue("o31") and not store.mas_globals.ahc_run_after_date)
                 )
             )
             or (
                 store.mas_isF14()
                 and (
-                    not persistent._mas_f14_in_f14_mode
-                    or (store.mas_globals.ahc_run_after_date and not persistent._mas_f14_date_count)
+                    not store.persistent._mas_f14_in_f14_mode
+                    or (store.mas_globals.ahc_run_after_date and not store.persistent._mas_f14_date_count)
                 )
             )
             or (
                 store.mas_isD25Season()
-                and (not persistent._mas_d25_in_d25_mode or store.ahc_utils.should_AHC_return_on_d25())
+                and (not store.persistent._mas_d25_in_d25_mode or store.ahc_utils.should_AHC_return_on_d25())
             )
         )
 
 init -2 python in mas_sprites:
     import store
 
-    def _outfit_wear_if_gifted(_moni_chr, outfit_name, by_user=False):
+    def _outfit_wear_if_gifted(_moni_chr, outfit_name, by_user=False, outfit_mode=False):
         """
         Wears the outfit if it exists and has been gifted/reacted.
         It has been gifted/reacted if the selectable is unlocked.
@@ -1207,13 +1219,16 @@ init -2 python in mas_sprites:
             outfit_name - name of the outfit
             by_user - True if this action was mandated by user, False if not.
                 (Default: False)
+            outfit_mode - True means we should change hair/acs if it
+                completes the outfit. False means we should not.
+                (Default: False)
         """
         outfit_to_wear = store.mas_sprites.get_sprite(
             store.mas_sprites.SP_CLOTHES,
             outfit_name
         )
         if outfit_to_wear is not None and store.mas_SELisUnlocked(outfit_to_wear):
-            _moni_chr.change_clothes(outfit_to_wear, by_user=by_user)
+            _moni_chr.change_clothes(outfit_to_wear, by_user=by_user, outfit_mode=outfit_mode)
 
 init 50 python:
     #Reset the ahc evs here as well in case they somehow lost their conditionals/actions
