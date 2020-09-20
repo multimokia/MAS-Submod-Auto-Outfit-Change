@@ -530,25 +530,26 @@ init 1 python in ahc_utils:
 
         global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
 
-        #Get our current bracelet
+        #Get out current bracelet
         _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
         _random_chance = renpy.random.randint(1,4) == 1
 
+        #Default some vars here
         _should_wear_bracelet_of_type = None
+        _is_wearing_light_bracelet = None
+        _is_wearing_dark_bracelet = None
 
-        _is_wearing_light_bracelet = _current_bracelet.hasprop('light') or _current_bracelet in __BUILTIN_LIGHT_BRACELET_ACS
-        _is_wearing_dark_bracelet = _current_bracelet.hasprop('dark') or _current_bracelet in __BUILTIN_DARK_BRACELET_ACS
+        if _current_bracelet:
+            _is_wearing_light_bracelet = _current_bracelet.hasprop('light') or _current_bracelet in __BUILTIN_LIGHT_BRACELET_ACS
+            _is_wearing_dark_bracelet = _current_bracelet.hasprop('dark') or _current_bracelet in __BUILTIN_DARK_BRACELET_ACS
 
         if isWearingClothesOfExprop("light bracelet"):
             _is_wearing_light_clothes = True
             _should_wear_bracelet_of_type = "light"
         if isWearingClothesOfExprop("dark bracelet"):
             _is_wearing_dark_clothes = True
-            if _should_wear_bracelet_of_type:
-                _should_wear_bracelet_of_type = "both"
-            else:
-                _should_wear_bracelet_of_type = "dark"
+            _should_wear_bracelet_of_type = "both" if _should_wear_bracelet_of_type else "dark"
 
         # If the outfit should not have a bracelet and Monika wears one, then remove it
         if isWearingClothesOfExprop("no bracelet") and _current_bracelet:
@@ -556,10 +557,7 @@ init 1 python in ahc_utils:
 
         # Monika is wearing clothes of both types
         elif _should_wear_bracelet_of_type == "both":
-            if renpy.random.randint(0,1):
-                _should_wear_bracelet_of_type = "light"
-            else:
-                _should_wear_bracelet_of_type = "dark"
+            _should_wear_bracelet_of_type = "light" if renpy.random.randint(0,1) else "dark"
 
             # Get the bracelet list
             _bracelet_list = getACSOfExprop(_should_wear_bracelet_of_type)
@@ -567,14 +565,17 @@ init 1 python in ahc_utils:
             if (
                 _bracelet_list
                 and (
-                    _random_chance
-                    and (_is_wearing_light_bracelet or _is_wearing_dark_bracelet)
-                    and _current_bracelet in _bracelet_list
-                    and len(_bracelet_list) >= 2
+                        (
+                        _current_bracelet
+                        and _random_chance
+                        and (_is_wearing_light_bracelet or _is_wearing_dark_bracelet)
+                        and _current_bracelet in _bracelet_list
+                        and len(_bracelet_list) >= 2
+                    )
+                    or not (_is_wearing_light_bracelet or _is_wearing_dark_bracelet)
                 )
-                or not (_is_wearing_light_bracelet or _is_wearing_dark_bracelet)
             ):
-                if _current_bracelet in _bracelet_list:
+                if _current_bracelet and _current_bracelet in _bracelet_list:
                     _bracelet_list.remove(_current_bracelet)
                 store.mas_sprites._acs_wear_if_found(store.monika_chr, renpy.random.choice(_bracelet_list).name)
 
@@ -586,7 +587,7 @@ init 1 python in ahc_utils:
 
             if _bracelet_list:
                 # If Monika already wears a bracelet there's a chance to change it
-                if _random_chance and "_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type):
+                if _current_bracelet and _random_chance and "_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type):
 
                     # Check if the current bracelet is in the list in case we ever have a bracelet that's part of an outfit
                     # and that is not unlocked
@@ -671,7 +672,7 @@ init 7 python:
     store.mas_getEVLPropValue("mas_crashed_start", "rules", dict()).update({"no_cloth_change": None})
     store.mas_getEVLPropValue("greeting_hairdown", "rules", dict()).update({"no_cloth_change": None})
 
-init 999 python in ahc_utils:
+init 990 python in ahc_utils:
 
     @store.mas_submod_utils.functionplugin("mas_dockstat_generic_rtg")
     def getReady():
@@ -708,10 +709,30 @@ init 999 python in ahc_utils:
                 store.monika_chr.wear_acs(store.mas_acs_ribbon_def)
 
         #Moni changes her clothes depending on certain conditions or wears what the player asked
-        if not store.persistent._mas_force_clothes:
+        if not store.persistent._mas_force_clothes or isWearingClothesOfExprop("lingerie"):
 
             if store.mas_isSpecialDay():
-                changeClothesOfExprop("formal")
+                if store.mas_isF14() and mas_isDayNow():
+                    changeClothesOfExprop("date")
+
+                elif store.mas_farewells.dockstat_rtg_label == "bye_trick_or_treat_rtg":
+                    if not store.ahc_utils.isWearingClothesOfExpropValue("o31"):
+                        _o31_outfits_list = MASClothes.by_exprop("costume", "o31")
+
+                        _current_o31_outfit = None
+
+                        for costume in _o31_outfits_list:
+                            if persistent._mas_o31_costumes_worn.get(costume.name) == datetime.date.today().year:
+                                _current_o31_outfit = costume.name
+                                break
+
+                        if _current_o31_outfit:
+                            store.mas_sprites._outfit_wear_if_gifted(store.monika_chr, _current_o31_outfit)
+                        else:
+                            changeClothesOfExprop("date")
+
+                else:
+                    changeClothesOfExprop("formal")
 
             else:
                 changeClothesOfExprop(getClothesExpropForTemperature(indoor=False))
@@ -779,6 +800,45 @@ init 999 python in ahc_utils:
                     _ahc_label_ev.last_seen = datetime.datetime.now()
 
                 store.mas_rmEVL(_ahc_label)
+
+# Until the time we get in iostart we don't know if there are any custom farewell labels
+# In order to be sure that we plug getReady to any future custom label we override the iostart label
+# and we plug customLabelsGetReady into both the generic iowait and the custom one, if found.
+# The function then checks and plugs getReady into the custom rtg label, if there's one.
+
+init 991 python in ahc_utils:
+
+    @store.mas_submod_utils.functionplugin("mas_dockstat_generic_iowait")
+    def customLabelsGetReady():
+        if renpy.has_label(store.mas_farewells.dockstat_rtg_label):
+            store.mas_submod_utils.registerFunction(
+                store.mas_farewells.dockstat_rtg_label,
+                store.ahc_utils.getReady
+            )
+
+init 992 python:
+    config.label_overrides["mas_dockstat_iostart"] = "mas_dockstat_iostart_ov"
+
+label mas_dockstat_iostart_ov:
+    show monika 2dsc
+    python:
+        persistent._mas_dockstat_going_to_leave = True
+        first_pass = True
+
+        # launch I/O thread
+        promise = store.mas_dockstat.monikagen_promise
+        promise.start()
+
+    #Jump to the iowait label
+    if renpy.has_label(mas_farewells.dockstat_iowait_label):
+        $ mas_submod_utils.registerFunction(
+            mas_farewells.dockstat_iowait_label,
+            store.ml_utils.customLabelsGetReady
+        )
+        jump expression mas_farewells.dockstat_iowait_label
+    #If the one passed in wasn't valid, then we'll use the generic iowait
+    jump mas_dockstat_generic_iowait
+
 
 init 3 python in ahc_utils:
     import datetime
@@ -1015,6 +1075,22 @@ init 4 python in ahc_utils:
             store.monika_chr.remove_acs(thermos_acs)
             store.mas_rmallEVL("mas_consumables_remove_thermos")
 
+    def isWearingClothesOfExpropValue(value):
+        """
+        Checks if the clothes Monika is currently wearing has an exprop with a provided value
+        This is used in cases where we only care about the value of an exprop, like when we want to check
+        if Monika is wearing a D25 or O31 outfit.
+        """
+
+        _current_outfit_props = _moni_chr.clothes.ex_props
+
+        if not _current_outfit_props:
+            return False
+
+        for prop, prop_value in _current_outfit_props.iteritems():
+            if prop_value == value.lower():
+                return True
+
 init 8 python in ahc_utils:
 
     def check_first_day_d25s():
@@ -1025,7 +1101,73 @@ init 8 python in ahc_utils:
             True if today is the first day of d25s, False otherwise
         """
         hol_intro_last_seen = store.mas_getEVL_last_seen("mas_d25_monika_holiday_intro")
-        return hol_intro_last_seen and hol_intro_last_seen.date() == datetime.date.today()
+
+        if hol_intro_last_seen and hol_intro_last_seen.date() == datetime.date.today():
+            return True
+
+        if not hol_intro_last_seen or not store.mas_lastSeenInYear("mas_d25_monika_holiday_intro"):
+            hol_intro_last_seen = store.mas_getEVL_last_seen("mas_d25_monika_christmas")
+            return hol_intro_last_seen and hol_intro_last_seen.date() == datetime.date.today()
+
+    def should_AHC_return_on_d25():
+        """
+        Checks if the ahc labels should return without doing anything on D25
+        CONDITIONS:
+            1) We return home from a date
+            2) The last seen of mas_d25_monika_christmas is today
+            3) The last seen of mas_d25_monika_christmas is after the end of the last sesh
+            4) We got the decor and mas_d25_monika_christmas through mas_d25_monika_holiday_intro_rh_rh which means
+               that we haven't seen mas_d25_monika_holiday_intro yet
+        """
+        hol_intro_last_seen = store.mas_getEVL_last_seen("mas_d25_monika_christmas")
+
+        return (
+            hol_intro_last_seen
+            and store.persistent.sessions.get("last_session_end")
+            and not store.mas_lastSeenInYear("mas_d25_monika_holiday_intro")
+            and store.mas_globals.ahc_run_after_date
+            and hol_intro_last_seen.date() == datetime.date.today()
+            and persistent.sessions["last_session_end"] < hol_intro_last_seen.date()
+        )
+
+init 9 python in ahc_utils:
+
+    def should_AHC_label_return():
+        """
+        Checks whether AHC labels should return without running if we're in D25, O31 or F14
+        CONDITIONS:
+            O31:
+                1) Return if we're not in o31 mode. This assured that the labels won't run before the intro.
+                2) Return if we're returning home from a date and Monika is wearing a costume.
+            F14:
+                1) Return if we're not in f14 mode. This assured that the labels won't run before the intro.
+                2) Return if we're returning home from a date but f14 count is 0.
+                   This means we came into f14 from a date but not a f14 date.
+            D25:
+                1) Return if we're not in d25 mode. This assured that the labels won't run before the intro.
+                2) Return if the function returns True. Check should_AHC_return_on_d25 for the full conditions.
+        """
+
+        return (
+                (
+                store.mas_isO31()
+                and (
+                    not persistent._mas_o31_in_o31_mode
+                    or (store.ahc_utils.isWearingClothesOfExpropValue("o31") and not store.mas_globals.ahc_run_after_date)
+                )
+            )
+            or (
+                store.mas_isF14()
+                and (
+                    not persistent._mas_f14_in_f14_mode
+                    or (store.mas_globals.ahc_run_after_date and not persistent._mas_f14_date_count)
+                )
+            )
+            or (
+                store.mas_isD25Season()
+                and (not persistent._mas_d25_in_d25_mode or store.ahc_utils.should_AHC_return_on_d25())
+            )
+        )
 
 init -2 python in mas_sprites:
     import store
@@ -1059,7 +1201,8 @@ init 50 python:
 
         hairup_ev.conditional=(
             "mas_isDayNow() "
-            "and not store.ahc_utils.hasHairPonytailRun() "
+            "and (not store.ahc_utils.hasHairPonytailRun() "
+            "or store.mas_globals.ahc_run_after_date) "
             "and (store.ahc_utils.shouldChangeHair('day') "
             "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
         )
@@ -1091,7 +1234,8 @@ init 5 python:
             eventlabel="monika_sethair_ponytail",
             conditional=(
                 "mas_isDayNow() "
-                "and not store.ahc_utils.hasHairPonytailRun() "
+                "and (not store.ahc_utils.hasHairPonytailRun() "
+                "or store.mas_globals.ahc_run_after_date) "
                 "and (store.ahc_utils.shouldChangeHair('day') "
                 "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
             ),
@@ -1105,25 +1249,49 @@ init 5 python:
 label monika_sethair_ponytail:
 
     #Need to recondition/action this
-    $ ahc_recond_ponytail()
+    $ store.ahc_recond_ponytail()
 
-    if (
-        store.ahc_utils.check_first_day_d25s()
-        or mas_isO31()
-        or mas_isF14()
-    ):
+    if store.ahc_utils.should_AHC_label_return():
+        #Reset our global var if we return
+        if store.mas_globals.ahc_run_after_date:
+            $ store.mas_globals.ahc_run_after_date = False
         return
 
-    $ _hair_random_chance = renpy.random.randint(1,4)
-    $ _clothes_random_chance = renpy.random.randint(1,3)
-    $ _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
+    python:
+        #NOTE: The random chances here are for chance to NOT change. A chance of 1 means that Monika won't change.
+
+        # If we're coming home from a date always change clothes
+        # Change hair only if Monika doesn't have day hair
+        if store.mas_globals.ahc_run_after_date:
+            _clothes_random_chance = 2
+            _hair_random_chance = 2 if not store.ahc_utils.isWearingDayHair() else 1
+        else:
+            # Don't change clothes we saw the D25 intro today, it's F14 or O31
+            # We assume that Monika already changed because of the intro
+            if (
+                store.ahc_utils.check_first_day_d25s()
+                or store.mas_isF14()
+                or store.mas_isO31()
+            ):
+                _clothes_random_chance = 1
+            else:
+                _clothes_random_chance = renpy.random.randint(1,3)
+
+            # Don't change hair if it's O31 and Monika is wearing a costume.
+            _hair_random_chance = 1 if (store.mas_isO31() and store.ahc_utils.isWearingClothesOfExpropValue("o31")) else renpy.random.randint(1,4)
+
+        _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
 
     if (
-        (
+            (
             store.ahc_utils.shouldChangeClothes(_clothes_exprop)
             and (
                 not store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop)
-                or (store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop) and _clothes_random_chance != 1)
+                or (
+                    store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop)
+                    and len(store.ahc_utils.getOutfitsOfExprop(_clothes_exprop)) > 1
+                    and _clothes_random_chance != 1
+                )
             )
         )
         or (
@@ -1138,11 +1306,21 @@ label monika_sethair_ponytail:
     ):
 
         if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
-            m 3eua "I'm going to get ready for today.{w=0.5}.{w=0.5}.{w=1}{nw}"
+            if store.mas_globals.ahc_run_after_date:
+                m 1eua "I'm just going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{w=1}{nw}"
+            else:
+                m 3eua "I'm going to get ready for today.{w=0.5}.{w=0.5}.{w=1}{nw}"
 
         else:
-            m 1eua "Give me a second, [mas_get_player_nickname()]."
-            m 3eua "I'm just getting myself ready for the day.{w=0.5}.{w=0.5}.{nw}"
+            if store.mas_globals.ahc_run_after_date:
+                m 1eua "Give me a moment [mas_get_player_nickname()], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
+            else:
+                m 1eua "Give me a second, [mas_get_player_nickname()]."
+                m 3eua "I'm just getting myself ready for the day.{w=0.5}.{w=0.5}.{nw}"
+
+        #Reset our global var here
+        if store.mas_globals.ahc_run_after_date:
+            $ store.mas_globals.ahc_run_after_date = False
 
         window hide
         call mas_transition_to_emptydesk
@@ -1195,24 +1373,51 @@ label monika_sethair_down:
     #Need to recondition/action this
     $ ahc_recond_down()
 
-    #Reset our global var here
-    if store.mas_globals.ahc_run_after_date:
-        $ store.mas_globals.ahc_run_after_date = False
-
-    if store.ahc_utils.check_first_day_d25s() or mas_isO31():
+    if store.ahc_utils.should_AHC_label_return():
+        #Reset our global var if we return
+        if store.mas_globals.ahc_run_after_date:
+            $ store.mas_globals.ahc_run_after_date = False
         return
 
-    #NOTE: The random chances here are for chance to NOT change
-    $ _hair_random_chance = renpy.random.randint(1,4)
-    $ _clothes_random_chance = 1 if mas_isF14() else renpy.random.randint(1,3)
-    $ _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
+    python:
+        #NOTE: The random chances here are for chance to NOT change. A chance of 1 means that Monika won't change.
+
+        # If we're coming home from a date always change clothes
+        # Change hair only if Monika doesn't have day hair
+        if store.mas_globals.ahc_run_after_date:
+            _clothes_random_chance = 2
+            _hair_random_chance = 2 if not store.ahc_utils.isWearingNightHair() else renpy.random.randint(1,4)
+        else:
+            # Don't change clothes we saw the D25 intro today, it's F14 or O31
+            # We assume that Monika already changed because of the intro
+            if (
+                store.ahc_utils.check_first_day_d25s()
+                or store.mas_isF14()
+                or store.mas_isO31()
+            ):
+                _clothes_random_chance = 1
+            else:
+                _clothes_random_chance = renpy.random.randint(1,3)
+
+            # Don't change hair if it's O31 and Monika is wearing a costume.
+            _hair_random_chance = 1 if (store.mas_isO31() and store.ahc_utils.isWearingClothesOfExpropValue("o31")) else renpy.random.randint(1,4)
+
+        _clothes_exprop = store.ahc_utils.getClothesExpropForTemperature()
+
+        #Reset our global var here
+        if store.mas_globals.ahc_run_after_date:
+            store.mas_globals.ahc_run_after_date = False
 
     if (
         (
             store.ahc_utils.shouldChangeClothes(_clothes_exprop)
             and (
                 not store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop)
-                or (store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop) and _clothes_random_chance != 1)
+                or (
+                    store.ahc_utils.isWearingClothesOfExprop(_clothes_exprop)
+                    and len(store.ahc_utils.getOutfitsOfExprop(_clothes_exprop)) > 1
+                    and _clothes_random_chance != 1
+                )
             )
         )
         or (
@@ -1229,7 +1434,7 @@ label monika_sethair_down:
         if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
             m 1eua "I'm just going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{w=1}{nw}"
         else:
-            m 1eua "Give me a moment [player], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
+            m 1eua "Give me a moment [mas_get_player_nickname()], I'm going to make myself a little more comfortable.{w=0.5}.{w=0.5}.{nw}"
 
         window hide
         call mas_transition_to_emptydesk
