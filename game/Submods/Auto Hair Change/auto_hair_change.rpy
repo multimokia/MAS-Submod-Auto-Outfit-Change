@@ -558,7 +558,7 @@ init 1 python in ahc_utils:
         #Get our current bracelet
         _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
-        _random_chance = renpy.random.randint(1,4) == 1
+        _random_chance = renpy.random.randint(1,3) == 1
 
         #Default some vars here
         _should_wear_bracelet_of_type = None
@@ -776,7 +776,7 @@ init 990 python in ahc_utils:
             #Check if we should change or remove the bracelet
             shouldChangeBracelet()
 
-    @store.mas_submod_utils.functionplugin("ch30_preloop")
+    @store.mas_submod_utils.functionplugin("ch30_post_exp_check")
     def startupAHCTrigger():
         """
         This allows Monika to change her hairstyle and clothes if we went from one day cycle to another
@@ -788,9 +788,10 @@ init 990 python in ahc_utils:
         if (
             not store.mas_globals.returned_home_this_sesh
             and (
-                check_first_day_d25s()
+                not check_first_day_d25s()
                 and not store.mas_isO31()
                 and not store.mas_isF14()
+                and store.selected_greeting
                 and "no_cloth_change" not in store.mas_getEVLPropValue(store.selected_greeting, "rules", {})
             )
         ):
