@@ -555,12 +555,14 @@ init 1 python in ahc_utils:
 
         global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
 
-        #Get our current bracelet
+        # Get our current bracelet
         _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
+        # This is used for the cases where Monika is already wearing a bracelet
+        # In these case she has a 33% chance to change to a different one
         _random_chance = renpy.random.randint(1,3) == 1
 
-        #Default some vars here
+        # Default some vars here
         _should_wear_bracelet_of_type = None
         _is_wearing_light_bracelet = None
         _is_wearing_dark_bracelet = None
@@ -572,6 +574,7 @@ init 1 python in ahc_utils:
         if isWearingClothesOfExprop("light bracelet"):
             _is_wearing_light_clothes = True
             _should_wear_bracelet_of_type = "light"
+
         if isWearingClothesOfExprop("dark bracelet"):
             _is_wearing_dark_clothes = True
             _should_wear_bracelet_of_type = "both" if _should_wear_bracelet_of_type else "dark"
@@ -833,7 +836,36 @@ init 990 python in ahc_utils:
                 if _ahc_label_ev is not None:
                     _ahc_label_ev.last_seen = datetime.datetime.now()
 
-                store.mas_rmEVL(_ahc_label)
+                    store.mas_rmEVL(_ahc_label)
+
+                    # The triggered label was monika_sethair_down and we have unlocked pjs
+                    if _ahc_label == "monika_sethair_down" and hasUnlockedClothesOfExprop("pajamas"):
+                        # Recondition the pjs topic
+                        store.ahc_recond_pjs()
+
+                        _now = datetime.datetime.now()
+
+                        _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
+
+                        if _ahc_pj_ev is not None and _ahc_pj_ev.start_date is not None:
+
+                            _time_till_start_date = _ahc_pj_ev.start_date - datetime.datetime.now()
+
+                            # If we're past the start_date or we're really close to the start_date, then trigger the pjs topic too
+                            if (
+                                _ahc_pj_ev.start_date <= _now < _ahc_pj_ev.end_date
+                                or _time_till_start_date <= datetime.timedelta(minutes=20)
+                            ):
+                                changeHairAndClothes(
+                                    _day_cycle=_day_cycle,
+                                    _hair_random_chance=1,
+                                    _clothes_random_chance=2,
+                                    _exprop="pajamas"
+                                )
+
+                                store.mas_rmEVL("monika_setoutfit_pjs")
+                                store.mas_stripEV("monika_setoutfit_pjs")
+
 
 # Until the time we get in iostart we don't know if there are any custom farewell labels
 # In order to be sure that we plug getReady to any future custom label we override the iostart label
@@ -1035,7 +1067,6 @@ init 3 python in ahc_utils:
 
 
 init 4 python in ahc_utils:
-
     def changeHairAndClothes(_day_cycle, _hair_random_chance, _clothes_random_chance, _exprop):
         """
         Allows Monika to change her hair and clothes depending on day cycle and random chance.
@@ -1065,6 +1096,30 @@ init 4 python in ahc_utils:
                 if prev_ribbon is not None:
                     store.monika_chr.remove_acs(prev_ribbon)
 
+        #Do clothes and acs logic
+        do_clothes_logic(_clothes_random_chance, _exprop)
+
+        #Now do hair logic
+        do_hair_logic(_hair_random_chance, _day_cycle)
+
+        #Do any post logic if need be
+        store.mas_submod_utils.getAndRunFunctions()
+
+        #Remove the thermos if we have one
+        thermos_acs = store.monika_chr.get_acs_of_type("thermos-mug")
+
+        if thermos_acs:
+            store.monika_chr.remove_acs(thermos_acs)
+            store.mas_rmallEVL("mas_consumables_remove_thermos")
+
+    def do_clothes_logic(_clothes_random_chance, _exprop):
+        """
+        Does logic related to clothes, including acs parts
+
+        IN:
+            _clothes_random_chance - chance for clothes to not change
+            _exprop - exprop to get clothes from
+        """
         # Change clothes section
         if (
             shouldChangeClothes(_exprop)
@@ -1077,16 +1132,26 @@ init 4 python in ahc_utils:
 
             shouldChangeBracelet()
 
+            #Do further acs management here
+            store.mas_submod_utils.getAndRunFunctions()
+
+    def do_hair_logic(_hair_random_chance, _day_cycle):
+        """
+        Does hair logic and changes hair as needed
+
+        IN:
+            _hair_random_chance - chance for hair to not change
+            _day_cycle - time of day (day/night)
+        """
         # Change hairstyle section
-        if (
-            (
+        if ((
                 (
-                len(eval("get{0}Hair()".format(_day_cycle.capitalize()))) > 1
-                and isWearingDayHair()
-                and isWearingNightHair()
-                and _hair_random_chance != 1
-            )
-            or not eval("isWearing{0}Hair()".format(_day_cycle.capitalize()))
+                    len(eval("get{0}Hair()".format(_day_cycle.capitalize()))) > 1
+                    and isWearingDayHair()
+                    and isWearingNightHair()
+                    and _hair_random_chance != 1
+                )
+                or not eval("isWearing{0}Hair()".format(_day_cycle.capitalize()))
             )
             and not store.persistent._mas_force_hair
         ):
@@ -1100,14 +1165,6 @@ init 4 python in ahc_utils:
                 renpy.random.choice(_hair_list),
                 by_user=False
             )
-
-        # Remove the thermos if we have one
-
-        thermos_acs = store.monika_chr.get_acs_of_type("thermos-mug")
-
-        if thermos_acs:
-            store.monika_chr.remove_acs(thermos_acs)
-            store.mas_rmallEVL("mas_consumables_remove_thermos")
 
     def isWearingClothesOfExpropValue(value):
         """
@@ -1261,6 +1318,40 @@ init 50 python:
         )
         hairdown_ev.action = EV_ACT_PUSH
 
+    #Only ahc hair down event and the equivalent startup trigger event should be able to call this
+    def ahc_recond_pjs():
+        """
+        Recondition and action the ahc pjs event
+        """
+        pjs_ev = mas_getEV("monika_setoutfit_pjs")
+
+        if pjs_ev:
+            _pj_thresh = 21
+            _sunrise_hour = int(mas_cvToDHM(persistent._mas_sunrise)[0:2])
+            _sunset_hour = int(mas_cvToDHM(persistent._mas_sunset)[0:2])
+            _now = datetime.datetime.now()
+            _yesterday = _now.date() - datetime.timedelta(days=1)
+
+            _date = _now.date() if store.mas_isSStoMN(_now) else _yesterday
+
+            # If the sunset is after the thresh, start_date will be an hour after the sunset hour
+            if _sunset_hour >= _pj_thresh:
+                _time = _sunset_hour + 1
+            # Else, if the sunset is us to an hour before the thresh, start_date will be an hour after the thresh
+            elif _pj_thresh - _sunset_hour <= 1:
+                _time = _pj_thresh + 1
+            # Else the start_date will be the thresh
+            else:
+                _time = _pj_thresh
+
+            pjs_ev.start_date = datetime.datetime.combine(_date, datetime.time(hour=_time))
+
+            pjs_ev.end_date = datetime.datetime.combine(
+                pjs_ev.start_date.date() + datetime.timedelta(days=1),
+                datetime.time(hour=_sunrise_hour - 1)
+            )
+
+            pjs_ev.action=EV_ACT_PUSH
 
     ahc_recond_ponytail()
     ahc_recond_down()
@@ -1446,6 +1537,17 @@ label monika_sethair_down:
         if store.mas_globals.ahc_run_after_date:
             store.mas_globals.ahc_run_after_date = False
 
+        _time_till_start_date = None
+
+        if store.ahc_utils.hasUnlockedClothesOfExprop("pajamas"):
+            # Recond the pjs topic
+            store.ahc_recond_pjs()
+
+            pjs_ev = mas_getEV("monika_setoutfit_pjs")
+
+            if pjs_ev is not None and pjs_ev.start_date is not None:
+                _time_till_start_date = pjs_ev.start_date - datetime.datetime.now()
+
     if (
         (
             store.ahc_utils.shouldChangeClothes(_clothes_exprop)
@@ -1467,6 +1569,7 @@ label monika_sethair_down:
             )
             or not store.ahc_utils.isWearingNightHair()
         )
+        or _time_till_start_date and _time_till_start_date <= datetime.timedelta(hours=1)
     ):
 
         if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
@@ -1480,12 +1583,26 @@ label monika_sethair_down:
         python:
             renpy.pause(1.0, hard=True)
 
-            store.ahc_utils.changeHairAndClothes(
-                _day_cycle="night",
-                _hair_random_chance=_hair_random_chance,
-                _clothes_random_chance=_clothes_random_chance,
-                _exprop=_clothes_exprop
-            )
+            # If we're close to the pj topic's start_date then change immediately to pjs
+            if _time_till_start_date and _time_till_start_date <= datetime.timedelta(hours=1):
+                store.ahc_utils.changeHairAndClothes(
+                    _day_cycle="night",
+                    _hair_random_chance=_hair_random_chance,
+                    _clothes_random_chance=2,
+                    _exprop="pajamas"
+                )
+
+                # Strip and remove the event from the event list so that it doesn't trigger twice
+                store.mas_rmEVL("monika_setoutfit_pjs")
+                store.mas_stripEVL("monika_setoutfit_pjs")
+
+            else:
+                store.ahc_utils.changeHairAndClothes(
+                    _day_cycle="night",
+                    _hair_random_chance=_hair_random_chance,
+                    _clothes_random_chance=_clothes_random_chance,
+                    _exprop=_clothes_exprop
+                )
 
             renpy.pause(4.0, hard=True)
 
@@ -1505,5 +1622,51 @@ label monika_sethair_down:
                 show monika 5hua at t11 zorder MAS_MONIKA_Z with dissolve_monika
 
             m 5hua "If you'd like me to change, just ask~"
+
+    return
+
+
+init 5 python:
+    addEvent(
+        Event(
+            persistent.event_database,
+            eventlabel="monika_setoutfit_pjs",
+            action=EV_ACT_PUSH,
+            show_in_idle=True,
+            rules={"skip alert": None}
+        ),
+        restartBlacklist=True
+    )
+
+label monika_setoutfit_pjs:
+
+    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
+        m 1eua "I'm just going to put on my pajamas.{w=0.5}.{w=0.5}.{w=1}{nw}"
+    else:
+        m 1eua "Give me a moment [mas_get_player_nickname()], I'm going to put on my pajamas.{w=0.5}.{w=0.5}.{nw}"
+
+    window hide
+    call mas_transition_to_emptydesk
+
+    python:
+        renpy.pause(1.0, hard=True)
+
+        store.ahc_utils.changeHairAndClothes(
+            _day_cycle="night",
+            _hair_random_chance=1,
+            _clothes_random_chance=2,
+            _exprop="pajamas"
+        )
+
+        renpy.pause(4.0, hard=True)
+
+    call mas_transition_from_emptydesk("monika 1eua")
+    window hide
+
+    if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
+        m 1eua "That feels better.{w=1}{nw}"
+
+    else:
+        m 1eua "That feels much better."
 
     return
