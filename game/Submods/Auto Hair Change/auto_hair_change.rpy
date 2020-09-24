@@ -1166,6 +1166,8 @@ init 4 python in ahc_utils:
                 by_user=False
             )
 
+            store.mas_submod_utils.getAndRunFunctions()
+
     def isWearingClothesOfExpropValue(value):
         """
         Checks if the clothes Monika is currently wearing has an exprop with a provided value
