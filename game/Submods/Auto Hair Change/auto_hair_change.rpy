@@ -137,7 +137,9 @@ init python in ahc_utils:
         "date": __BUILTIN_DATE_CLOTHES,
         "formal": __BUILTIN_FORMAL_CLOTHES,
         "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
-        "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+        "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES,
+        "light": __BUILTIN_LIGHT_BRACELET_ACS,
+        "dark": __BUILTIN_DARK_BRACELET_ACS
     }
 
     def add_builtin_to_list(obj, ex_prop):
@@ -832,27 +834,31 @@ init 990 python in ahc_utils:
 
                         _now = datetime.datetime.now()
 
-                        _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
+            _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
 
-                        if _ahc_pj_ev is not None and _ahc_pj_ev.start_date is not None:
-                            _time_till_start_date = _ahc_pj_ev.start_date - datetime.datetime.now()
+            if _ahc_pj_ev is not None and _ahc_pj_ev.start_date is not None:
+                _time_till_start_date = _ahc_pj_ev.start_date - datetime.datetime.now()
 
-                            # If we're past the start_date or we're really close to the start_date, then trigger the pjs topic too
-                            if (
-                                _ahc_pj_ev.start_date <= _now < _ahc_pj_ev.end_date
-                                or _time_till_start_date <= datetime.timedelta(minutes=20)
-                            ):
-                                if not store.ahc_utils.isWearingClothesOfExprop("pajamas"):
-                                    changeHairAndClothes(
-                                        _day_cycle=_day_cycle,
-                                        _hair_random_chance=1,
-                                        _clothes_random_chance=2,
-                                        _exprop="pajamas"
-                                    )
+                # If we're past the start_date or we're really close to the start_date, then trigger the pjs topic too
+                if (
+                    _ahc_pj_ev.start_date <= _now < _ahc_pj_ev.end_date
+                    or _time_till_start_date <= datetime.timedelta(minutes=20)
+                ):
+                    if not store.ahc_utils.isWearingClothesOfExprop("pajamas"):
+                        changeHairAndClothes(
+                            _day_cycle=_day_cycle,
+                            _hair_random_chance=1,
+                            _clothes_random_chance=2,
+                            _exprop="pajamas"
+                        )
 
-                                store.mas_rmEVL("monika_setoutfit_pjs")
-                                store.mas_stripEV("monika_setoutfit_pjs")
+                    store.mas_rmEVL("monika_setoutfit_pjs")
+                    store.mas_stripEV("monika_setoutfit_pjs")
 
+                # If we're part the end_date, the strip and remove the event from the event list
+                elif _ahc_pj_ev.end_date <= _now:
+                    store.mas_rmEVL("monika_setoutfit_pjs")
+                    store.mas_stripEV("monika_setoutfit_pjs")
 
 # Until the time we get in iostart we don't know if there are any custom farewell labels
 # In order to be sure that we plug getReady to any future custom label we override the iostart label
