@@ -789,6 +789,7 @@ init 990 python in ahc_utils:
         ):
 
             _clothes_exprop = getClothesExpropForTemperature()
+            _now = datetime.datetime.now()
 
             if (
                 (
@@ -831,8 +832,6 @@ init 990 python in ahc_utils:
                     if _ahc_label == "monika_sethair_down" and hasUnlockedClothesOfExprop("pajamas"):
                         # Recondition the pjs topic
                         store.ahc_recond_pjs()
-
-                        _now = datetime.datetime.now()
 
             _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
 
