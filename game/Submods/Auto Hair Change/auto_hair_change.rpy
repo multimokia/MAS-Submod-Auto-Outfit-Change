@@ -852,13 +852,11 @@ init 990 python in ahc_utils:
                             _exprop="pajamas"
                         )
 
-                    store.mas_rmEVL("monika_setoutfit_pjs")
-                    store.mas_stripEV("monika_setoutfit_pjs")
+                    store.mas_stripEVL("monika_setoutfit_pjs", list_pop=True)
 
                 # If we're part the end_date, the strip and remove the event from the event list
                 elif _ahc_pj_ev.end_date <= _now:
-                    store.mas_rmEVL("monika_setoutfit_pjs")
-                    store.mas_stripEV("monika_setoutfit_pjs")
+                    store.mas_stripEVL("monika_setoutfit_pjs", list_pop=True)
 
 # Until the time we get in iostart we don't know if there are any custom farewell labels
 # In order to be sure that we plug getReady to any future custom label we override the iostart label
@@ -1588,8 +1586,7 @@ label monika_sethair_down:
                 )
 
                 # Strip and remove the event from the event list so that it doesn't trigger twice
-                store.mas_rmEVL("monika_setoutfit_pjs")
-                store.mas_stripEVL("monika_setoutfit_pjs")
+                store.mas_stripEVL("monika_setoutfit_pjs", list_pop=True)
 
             else:
                 store.ahc_utils.changeHairAndClothes(
