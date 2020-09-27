@@ -5,6 +5,7 @@
   - *store.ahc_utils.`changeHairAndClothes`*
   - *store.ahc_utils.`do_hair_logic`*
   - *store.ahc_utils.`do_clothes_logic`*
+
 This submod is compatible with the [Submod Updater Plugin](https://github.com/Booplicate/MAS-Submods-SubmodUpdaterPlugin/releases/latest)! Give it an install to make updating this submod easier.
 
 ### Please report any and all problems in the `issues` tab.
