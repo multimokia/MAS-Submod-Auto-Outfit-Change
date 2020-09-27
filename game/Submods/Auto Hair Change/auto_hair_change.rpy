@@ -128,11 +128,52 @@ init python in ahc_utils:
         "finale_clothes_jacket_brown.json": {"jacket": True, "no bracelet": True},
         "velius94_clothes_dress_whitenavyblue.json": {"home": True, "date": True, "light bracelet": True, "dark bracelet": True},
         "finale_hoodie_green.json": {"sweater": True, "no bracelet": True},
-        "velius94_acs_flower_bracelet_light.json": {"light": True},
-        "velius94_acs_flower_bracelet_dark.json": {"dark": True},
         "finale_clothes_shirt_blue.json": {"home": True},
         "velius94_clothes_shirt_pink.json": {"home": True, "date": True}
     }
+
+    EXPROPS_MAP = {
+        "home": __BUILTIN_HOME_CLOTHES,
+        "date": __BUILTIN_DATE_CLOTHES,
+        "formal": __BUILTIN_FORMAL_CLOTHES,
+        "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
+        "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
+    }
+
+    def add_builtin_to_list(obj, ex_prop):
+        """
+        Adds a builtin to a builtin list
+
+        IN:
+            obj - MASClothes or MASAccessory object to add to the appropritate list
+                (NOTE: THESE ARE NOT VALIDATED FOR TYPE)
+            ex_prop - ex_prop list to map to.
+        """
+        global EXPROPS_MAP
+
+        if ex_prop not in EXPROPS_MAP:
+            return
+
+        EXPROPS_MAP[ex_prop].append(obj)
+
+    def remove_builtin_from_list(obj, ex_prop):
+        """
+        Removes a builtin from the builtin list
+
+        IN:
+            obj - MASClothes or MASAccessory object to remove from the appropritate list
+                (NOTE: If this isn't present in a list, this does nothing)
+            ex_prop - ex_prop list to remove from
+        """
+        global EXPROPS_MAP
+
+        if ex_prop not in EXPROPS_MAP:
+            return
+
+        if obj not in EXPROPS_MAP[ex_prop]:
+            return
+
+        EXPROPS_MAP[ex_prop].remove(obj)
 
     def __updateJsons():
         """
@@ -373,23 +414,12 @@ init python in ahc_utils:
                 True if we have unlocked clothes with the exprop + value provided
                 False otherwise
         """
-
-        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
-
-        exprops_map = {
-            "home": __BUILTIN_HOME_CLOTHES,
-            "date": __BUILTIN_DATE_CLOTHES,
-            "formal": __BUILTIN_FORMAL_CLOTHES,
-            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
-            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
-        }
-
         for clothes in store.MASClothes.by_exprop(exprop, value):
             if store.mas_SELisUnlocked(clothes):
                 return True
 
-        if exprop in exprops_map:
-            for clothes in exprops_map[exprop]:
+        if exprop in EXPROPS_MAP:
+            for clothes in EXPROPS_MAP[exprop]:
                 if store.mas_SELisUnlocked(clothes):
                     return True
 
@@ -405,17 +435,6 @@ init python in ahc_utils:
         OUT:
             A list of unlocked clothes of a specific exprop
         """
-
-        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
-
-        exprops_map = {
-            "home": __BUILTIN_HOME_CLOTHES,
-            "date": __BUILTIN_DATE_CLOTHES,
-            "formal": __BUILTIN_FORMAL_CLOTHES,
-            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
-            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
-        }
-
         # if there are no unlocked outfits then return
         if not hasUnlockedClothesOfExprop(exprop, value):
             return None
@@ -428,8 +447,8 @@ init python in ahc_utils:
             if store.mas_SELisUnlocked(clothes):
                 clothes_pool.append(clothes)
 
-        if exprop in exprops_map:
-            for clothes in exprops_map[exprop]:
+        if exprop in EXPROPS_MAP:
+            for clothes in EXPROPS_MAP[exprop]:
                 if store.mas_SELisUnlocked(clothes):
                     clothes_pool.append(clothes)
 
@@ -467,14 +486,6 @@ init python in ahc_utils:
                 True if we have unlocked ACS with the exprop + value provided
                 False otherwise
         """
-
-        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
-
-        exprops_map = {
-            "light": __BUILTIN_LIGHT_BRACELET_ACS,
-            "dark": __BUILTIN_DARK_BRACELET_ACS
-        }
-
         for acs_name in store.mas_sprites.ACS_MAP:
             accessory = store.mas_sprites.ACS_MAP[acs_name]
             if (
@@ -487,8 +498,8 @@ init python in ahc_utils:
             ):
                 return True
 
-        if exprop in exprops_map:
-            for accessory in exprops_map[exprop]:
+        if exprop in EXPROPS_MAP:
+            for accessory in EXPROPS_MAP[exprop]:
                 if store.mas_SELisUnlocked(accessory):
                     return True
 
@@ -504,14 +515,6 @@ init python in ahc_utils:
         OUT:
             A list of unlocked ACS of a specific exprop
         """
-
-        global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
-
-        exprops_map = {
-            "light": __BUILTIN_LIGHT_BRACELET_ACS,
-            "dark": __BUILTIN_DARK_BRACELET_ACS
-        }
-
         # if there are no unlocked ACS then return
         if not hasUnlockedACSOfExprop(exprop, value):
             return None
@@ -522,8 +525,8 @@ init python in ahc_utils:
             if acs.hasprop(exprop) and (value is None or value == acs.getprop(exprop)) and store.mas_SELisUnlocked(acs)
         ]
 
-        if exprop in exprops_map:
-            for accessory in exprops_map[exprop]:
+        if exprop in EXPROPS_MAP:
+            for accessory in EXPROPS_MAP[exprop]:
                 if store.mas_SELisUnlocked(accessory):
                     acs_pool.append(accessory)
 
@@ -633,27 +636,16 @@ init 1 python in ahc_utils:
         """
         Checks is Monika is wearing an outfit of the provided exprop
         """
-
-        global __BUILTIN_HOME_CLOTHES, __BUILTIN_DATE_CLOTHES, __BUILTIN_FORMAL_CLOTHES, __BUILTIN_LIGHT_BRACELET_CLOTHES, __BUILTIN_DARK_BRACELET_CLOTHES
-
-        exprops_map = {
-            "home": __BUILTIN_HOME_CLOTHES,
-            "date": __BUILTIN_DATE_CLOTHES,
-            "formal": __BUILTIN_FORMAL_CLOTHES,
-            "light bracelet": __BUILTIN_LIGHT_BRACELET_CLOTHES,
-            "dark bracelet": __BUILTIN_DARK_BRACELET_CLOTHES
-        }
-
-        if exprop in exprops_map:
+        if exprop in EXPROPS_MAP:
             return (
                 exprop in store.monika_chr.clothes.ex_props
-                or store.monika_chr.clothes in exprops_map[exprop]
+                or store.monika_chr.clothes in EXPROPS_MAP[exprop]
             )
+
         else:
             return exprop in store.monika_chr.clothes.ex_props
 
 init 2 python in ahc_utils:
-
     def changeClothesOfExprop(exprop, chance=True):
         """
         Chooses and wears an outfit of the provided exprop
@@ -680,8 +672,7 @@ init 2 python in ahc_utils:
 
         # If Monika is wearing clothes of this exprop and there are more than 2 outfits in the list,
         # then depending on the chance var, she has a chance to change
-        elif (
-                (
+        elif ((
                 (chance and renpy.random.randint(1,3) == 1)
                 or not chance
             )
@@ -694,14 +685,11 @@ init 2 python in ahc_utils:
         return
 
 init 7 python:
-
     # Update the rules of these greetings so that she doesn't change on her own on startup, if any of these are chosen
-
     store.mas_getEVLPropValue("mas_crashed_start", "rules", dict()).update({"no_cloth_change": None})
     store.mas_getEVLPropValue("greeting_hairdown", "rules", dict()).update({"no_cloth_change": None})
 
 init 990 python in ahc_utils:
-
     @store.mas_submod_utils.functionplugin("mas_dockstat_generic_rtg")
     def getReady():
         """
@@ -741,7 +729,6 @@ init 990 python in ahc_utils:
 
         #Moni changes her clothes depending on certain conditions or wears what the player asked
         if not store.persistent._mas_force_clothes or isWearingClothesOfExprop("lingerie"):
-
             if store.mas_isSpecialDay():
                 if store.mas_isF14() and store.mas_isDayNow():
                     changeClothesOfExprop("date")
@@ -848,7 +835,6 @@ init 990 python in ahc_utils:
                         _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
 
                         if _ahc_pj_ev is not None and _ahc_pj_ev.start_date is not None:
-
                             _time_till_start_date = _ahc_pj_ev.start_date - datetime.datetime.now()
 
                             # If we're past the start_date or we're really close to the start_date, then trigger the pjs topic too
@@ -856,12 +842,13 @@ init 990 python in ahc_utils:
                                 _ahc_pj_ev.start_date <= _now < _ahc_pj_ev.end_date
                                 or _time_till_start_date <= datetime.timedelta(minutes=20)
                             ):
-                                changeHairAndClothes(
-                                    _day_cycle=_day_cycle,
-                                    _hair_random_chance=1,
-                                    _clothes_random_chance=2,
-                                    _exprop="pajamas"
-                                )
+                                if not store.ahc_utils.isWearingClothesOfExprop("pajamas"):
+                                    changeHairAndClothes(
+                                        _day_cycle=_day_cycle,
+                                        _hair_random_chance=1,
+                                        _clothes_random_chance=2,
+                                        _exprop="pajamas"
+                                    )
 
                                 store.mas_rmEVL("monika_setoutfit_pjs")
                                 store.mas_stripEV("monika_setoutfit_pjs")
@@ -1641,6 +1628,12 @@ init 5 python:
     )
 
 label monika_setoutfit_pjs:
+
+    #If we asked Monika to change clothes by the time this is triggered, the event was somehow triggered and we
+    #a) don't have any unlocked PJ's, or Monika is already wearing them (possible gift reaction)
+    #As such, we should return here.
+    if not ahc_utils.shouldChangeClothes("pajamas") or ahc_utils.isWearingClothesOfExprop("pajamas"):
+        return
 
     if store.mas_globals.in_idle_mode or (mas_canCheckActiveWindow() and not mas_isFocused()):
         m 1eua "I'm just going to put on my pajamas.{w=0.5}.{w=0.5}.{w=1}{nw}"

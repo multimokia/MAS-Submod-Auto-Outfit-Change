@@ -56,6 +56,10 @@
   - `Finale Jacket Brown`
   - (Note: You'll need to update jsons via the submod's settings menu to apply this change)
 
+### `"pajamas"`:
+- value: **ignored**
+- Flags the outfit as a pair of pajamas. Monika will opt to wear them if it's late enough, or once it passes a certain time threshold
+
 ### Accessory Related Exprops:
 - These ex_props allow Auto Outfit Change to categorize bracelets so Monika can pick the ones which will look best with the outfit
 - **NOTE**: Since bracelets aren't fully supported in MAS yet, this is slightly awkward to use. While it's possible to create bracelet jsons, it's not possible to ask Monika to wear them, additionally they have some other issues like clipping for certain outfits with longer sleeves
@@ -123,3 +127,18 @@
 - **Base Included Hair**:
   - `Down`
   - `Down (Tied Strand)`
+
+## Accessories:
+- These ex_props allow Auto Outfit Change to categorize bracelets.
+- Like mentioned above, bracelets aren't fully supported in MAS, so you might see some clipping issues with outfits if you use them yourself.
+- Those outfits should be given the `"no bracelet"` ex_prop.
+
+### `"light"`:
+- value: **ignored**
+- Flags the bracelet as a light colored bracelet
+- Will be used to handle combining with outfits, using the related ex_props on the current outfit
+
+### `"dark"`:
+- value: **ignored**
+- Flags the bracelet as a dark colored bracelet
+- Will be used to handle combining with outfits, using the related ex_props on the current outfit

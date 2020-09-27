@@ -1,4 +1,25 @@
 # Changelog
+## September 27th, 2020:
+- Crashfixes if your internet dropped or the connection timed out
+- Add support for pajama outfits
+- More exprops for bracelet customization
+- Added two new functions:
+  - *store.ahc_utils.*`add_builtin_to_list(sprite_obj, ex_prop)`:
+    - Adds a sprite object to the builtin list
+  - *store.ahc_utils.*`remove_builtin_from_list(sprite_obj, ex_prop)`:
+    - Removes a sprite object from the builtin list
+  - These add more flexibility in controlling outfits which can be selected
+
+## September 14th, 2020:
+- Bugfixes
+- Crash where having been with Monika for at least one D25 season was assumed
+- Fix an issue where the conditionals wouldn't be updated for those migrating from the original auto hair change
+
+## September 14th, 2020:
+- Auto Hair Change -> Auto Outfit Change
+- Now changes outfits
+- Customizable with ex_props
+
 ## March 15th, 2020:
 - Adjusted for more types of night hair
 - Allowed spritepack support using ex_props
