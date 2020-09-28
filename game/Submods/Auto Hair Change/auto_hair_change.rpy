@@ -1103,6 +1103,10 @@ init 4 python in ahc_utils:
             store.monika_chr.remove_acs(thermos_acs)
             store.mas_rmallEVL("mas_consumables_remove_thermos")
 
+        #Save Monika's new clothes/hair/acs
+        store.monika_chr.save()
+        store.renpy.save_persistent()
+
     def do_clothes_logic(_clothes_random_chance, _exprop):
         """
         Does logic related to clothes, including acs parts
