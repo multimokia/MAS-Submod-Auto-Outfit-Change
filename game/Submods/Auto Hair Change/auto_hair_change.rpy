@@ -825,7 +825,7 @@ init 990 python in ahc_utils:
                 _ahc_label_ev = store.mas_getEV(_ahc_label)
 
                 if _ahc_label_ev is not None:
-                    _ahc_label_ev.last_seen = datetime.datetime.now()
+                    _ahc_label_ev.last_seen = _now
 
                     store.mas_rmEVL(_ahc_label)
 
@@ -837,16 +837,12 @@ init 990 python in ahc_utils:
             _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
 
             if _ahc_pj_ev is not None and _ahc_pj_ev.start_date is not None:
-                _time_till_start_date = _ahc_pj_ev.start_date - datetime.datetime.now()
 
                 # If we're past the start_date or we're really close to the start_date, then trigger the pjs topic too
-                if (
-                    _ahc_pj_ev.start_date <= _now < _ahc_pj_ev.end_date
-                    or _time_till_start_date <= datetime.timedelta(minutes=20)
-                ):
+                if _ahc_pj_ev.start_date - datetime.timedelta(minutes=20) <= _now < _ahc_pj_ev.end_date:
                     if not store.ahc_utils.isWearingClothesOfExprop("pajamas"):
                         changeHairAndClothes(
-                            _day_cycle=_day_cycle,
+                            _day_cycle="night",
                             _hair_random_chance=1,
                             _clothes_random_chance=2,
                             _exprop="pajamas"
