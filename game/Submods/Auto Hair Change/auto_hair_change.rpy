@@ -1194,6 +1194,8 @@ init 8 python in ahc_utils:
             hol_intro_last_seen = store.mas_getEVL_last_seen("mas_d25_monika_christmas")
             return hol_intro_last_seen and hol_intro_last_seen.date() == datetime.date.today()
 
+#TODO: Change the last condition of the return after TMA is in
+
     def should_AHC_return_on_d25():
         """
         Checks if the ahc labels should return without doing anything on D25
@@ -1212,7 +1214,7 @@ init 8 python in ahc_utils:
             and not store.mas_lastSeenInYear("mas_d25_monika_holiday_intro")
             and store.mas_globals.ahc_run_after_date
             and hol_intro_last_seen.date() == datetime.date.today()
-            and store.persistent.sessions["last_session_end"] < hol_intro_last_seen.date()
+            and store.persistent.sessions["last_session_end"] < hol_intro_last_seen
         )
 
 init 9 python in ahc_utils:
