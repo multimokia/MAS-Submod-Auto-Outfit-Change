@@ -1028,7 +1028,7 @@ init 3 python in ahc_utils:
         """
         Checks whether Monika should change her hair
         """
-        if not hair_type:
+        if not hair_type or hair_type.lower() not in ["day", "night"]:
             return False
 
         return (
@@ -1038,7 +1038,10 @@ init 3 python in ahc_utils:
                 and isWearingDayHair()
                 and isWearingNightHair()
             )
-            or not eval("isWearing{0}Hair()".format(hair_type.capitalize()))
+            or (
+                len(eval("get{0}Hair()".format(hair_type.capitalize()))) > 0
+                and not eval("isWearing{0}Hair()".format(hair_type.capitalize()))
+            )
             )
             and not store.persistent._mas_force_hair
         )
@@ -1134,20 +1137,23 @@ init 4 python in ahc_utils:
             _hair_random_chance - chance for hair to not change
             _day_cycle - time of day (day/night)
         """
+        _hair_list = eval("get{0}Hair()".format(_day_cycle.capitalize()))
+
         # Change hairstyle section
         if ((
                 (
-                    len(eval("get{0}Hair()".format(_day_cycle.capitalize()))) > 1
+                    len(_hair_list) > 1
                     and isWearingDayHair()
                     and isWearingNightHair()
                     and _hair_random_chance != 1
                 )
-                or not eval("isWearing{0}Hair()".format(_day_cycle.capitalize()))
+                or (
+                    len(_hair_list) > 0
+                    and not eval("isWearing{0}Hair()".format(_day_cycle.capitalize()))
+                )
             )
             and not store.persistent._mas_force_hair
         ):
-
-            _hair_list = eval("get{0}Hair()".format(_day_cycle.capitalize()))
 
             if eval("isWearing{0}Hair()".format(_day_cycle.capitalize())):
                 _hair_list.remove(store.monika_chr.hair)
@@ -1425,7 +1431,10 @@ label monika_sethair_ponytail:
                 and store.ahc_utils.isWearingNightHair()
                 and _hair_random_chance != 1
             )
-            or not store.ahc_utils.isWearingDayHair()
+            or (
+                len(store.ahc_utils.getDayHair()) > 0
+                and not store.ahc_utils.isWearingDayHair()
+            )
         )
     ):
 
@@ -1562,7 +1571,10 @@ label monika_sethair_down:
                 and store.ahc_utils.isWearingNightHair()
                 and _hair_random_chance != 1
             )
-            or not store.ahc_utils.isWearingNightHair()
+            or (
+                len(store.ahc_utils.getNightHair()) > 0
+                and not store.ahc_utils.isWearingNightHair()
+            )
         )
         or _time_till_start_date and _time_till_start_date <= datetime.timedelta(hours=1)
     ):
