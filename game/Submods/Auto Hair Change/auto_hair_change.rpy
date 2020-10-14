@@ -26,8 +26,11 @@ init -989 python in ahc_utils:
 #START: Update scripts (when we have them)
 
 init -1 python:
-    tt_when_to_update = (
-        "Just updated or reinstalled your hair spritepacks? Use this to get them working with AHC again."
+    ahc_tt_when_to_auto_update = (
+        "Just updated or reinstalled your spritepacks? Use this to get them working with AHC again."
+    )
+    ahc_tt_when_to_manually_update = (
+        "Use this to manually adjust each outfit for your needs."
     )
 
 #START: Settings pane
@@ -42,10 +45,233 @@ screen auto_hair_change_settings_screen():
             style_prefix "check"
             box_wrap False
 
-            textbutton _("Update Jsons"):
+            textbutton _("Auto update Jsons"):
                 action Function(store.ahc_utils.__updateJsons)
-                hovered SetField(submods_screen_tt, "value", tt_when_to_update)
+                hovered SetField(submods_screen_tt, "value", ahc_tt_when_to_auto_update)
                 unhovered SetField(submods_screen_tt, "value", submods_screen_tt.default)
+
+            textbutton _("Manually update Jsons"):
+                selected False
+                action Show("ahc_sprites_settings_submenu")
+                hovered SetField(submods_screen_tt, "value", ahc_tt_when_to_manually_update)
+                unhovered SetField(submods_screen_tt, "value", submods_screen_tt.default)
+
+screen ahc_confirm_screen(prompt, yes_action, no_action):
+    key "noshift_T" action NullAction()
+    key "noshift_t" action NullAction()
+    key "noshift_M" action NullAction()
+    key "noshift_m" action NullAction()
+    key "noshift_P" action NullAction()
+    key "noshift_p" action NullAction()
+    key "noshift_E" action NullAction()
+    key "noshift_e" action NullAction()
+
+    modal True
+
+    zorder 200
+
+    style_prefix "confirm"
+    add mas_getTimeFile("gui/overlay/confirm.png")
+
+    frame:
+        vbox:
+            align (0.5, 0.5)
+            spacing 30
+
+            label prompt:
+                style "confirm_prompt"
+                xalign 0.5
+
+            hbox:
+                xalign 0.5
+                spacing 100
+
+                textbutton "Yes":
+                    action yes_action
+
+                textbutton "No":
+                    action no_action
+
+screen ahc_sprites_settings_submenu():
+    key "noshift_T" action NullAction()
+    key "noshift_t" action NullAction()
+    key "noshift_M" action NullAction()
+    key "noshift_m" action NullAction()
+    key "noshift_P" action NullAction()
+    key "noshift_p" action NullAction()
+    key "noshift_E" action NullAction()
+    key "noshift_e" action NullAction()
+
+    default spr_data = store.ahc_utils.__get_sprites_data()
+
+    modal True
+
+    zorder 200
+
+    style_prefix "confirm"
+    add mas_getTimeFile("gui/overlay/confirm.png")
+
+    frame:
+        vbox:
+            spacing 5
+
+            if spr_data[store.mas_sprites_json.SP_ACS]:
+                textbutton _("Adjust accessories"):
+                    xalign 0.5
+                    selected False
+                    action (
+                        Show("ahc_sprites_settings", all_spr_ex_props=store.ahc_utils.ACS_EX_PROPS, spr_data=spr_data[store.mas_sprites_json.SP_ACS]),
+                        Hide("ahc_sprites_settings_submenu")
+                    )
+
+            if spr_data[store.mas_sprites_json.SP_HAIR]:
+                textbutton _("Adjust hairstyles"):
+                    xalign 0.5
+                    selected False
+                    action (
+                        Show("ahc_sprites_settings", all_spr_ex_props=store.ahc_utils.HAIR_EX_PROPS, spr_data=spr_data[store.mas_sprites_json.SP_HAIR]),
+                        Hide("ahc_sprites_settings_submenu")
+                    )
+
+            if spr_data[store.mas_sprites_json.SP_CLOTHES]:
+                textbutton _("Adjust clothes"):
+                    xalign 0.5
+                    selected False
+                    action (
+                        Show("ahc_sprites_settings", all_spr_ex_props=store.ahc_utils.CLOTHES_EX_PROPS, spr_data=spr_data[store.mas_sprites_json.SP_CLOTHES]),
+                        Hide("ahc_sprites_settings_submenu")
+                    )
+
+            textbutton _("Return"):
+                xalign 0.5
+                selected False
+                action Hide("ahc_sprites_settings_submenu")
+
+screen ahc_sprites_settings(all_spr_ex_props, spr_data):
+    key "noshift_T" action NullAction()
+    key "noshift_t" action NullAction()
+    key "noshift_M" action NullAction()
+    key "noshift_m" action NullAction()
+    key "noshift_P" action NullAction()
+    key "noshift_p" action NullAction()
+    key "noshift_E" action NullAction()
+    key "noshift_e" action NullAction()
+
+    default og_spr_data = store.ahc_utils.deepcopy(spr_data)
+
+    modal True
+
+    zorder 200
+
+    style_prefix "confirm"
+    add mas_getTimeFile("gui/overlay/confirm.png")
+
+    frame:
+        vbox:
+            ymaximum 400
+            xmaximum 700
+            xfill True
+            yfill False
+            spacing 10
+
+            viewport:
+                id "viewport"
+                scrollbars "vertical"
+                ymaximum 350
+                xmaximum 680
+                xfill True
+                yfill False
+                mousewheel True
+
+                vbox:
+                    xmaximum 680
+                    xfill True
+                    yfill False
+                    box_wrap False
+
+                    for spr in spr_data:
+                        text spr["disp_name"]
+                        hbox:
+                            xpos 10
+                            spacing 5
+                            xmaximum 680
+                            box_wrap True
+
+                            for ex_prop in all_spr_ex_props:
+                                textbutton ex_prop:
+                                    style "check_button"
+                                    ypos 1
+                                    selected ex_prop in spr["current_ex_props"]
+                                    action If(
+                                        ex_prop in spr["current_ex_props"],
+                                        true=ahc_utils.PopDict(
+                                            dict=spr["current_ex_props"],
+                                            key=ex_prop
+                                        ),
+                                        false=SetDict(
+                                            dict=spr["current_ex_props"],
+                                            key=ex_prop,
+                                            value=all_spr_ex_props[ex_prop]
+                                        )
+                                    )
+
+            hbox:
+                xalign 0.5
+                spacing 10
+                textbutton "Save changes":
+                    selected og_spr_data != spr_data
+                    action If(
+                        og_spr_data == spr_data,
+                        true=None,
+                        false=(
+                            Function(store.ahc_utils.__save_sprites_changes, og_spr_data, spr_data),
+                            SetScreenVariable("og_spr_data", store.ahc_utils.deepcopy(spr_data))
+                        )
+                    )
+
+                textbutton "Return":
+                    selected False
+                    action If(
+                        og_spr_data == spr_data,
+                        true=(
+                            Show("ahc_sprites_settings_submenu"),
+                            Hide("ahc_sprites_settings")
+                        ),
+                        false=Show(
+                            "ahc_confirm_screen",
+                            prompt="You have {b}unsaved{/b} changes. Are you sure you want to leave?",
+                            yes_action=(
+                                Show("ahc_sprites_settings_submenu"),
+                                Hide("ahc_sprites_settings"),
+                                Hide("ahc_confirm_screen")
+                            ),
+                            no_action=Hide("ahc_confirm_screen")
+                        )
+                    )
+
+                textbutton "Help":
+                    selected False
+                    action Show(
+                        "ahc_confirm_screen",
+                        prompt="This'll open a new tab in your browser.",
+                        yes_action=(
+                            OpenURL("https://github.com/multimokia/MAS-Submod-Auto-Outfit-Change/blob/master/game/Submods/Auto%20Hair%20Change/ex_prop_explanation.md"),
+                            Hide("ahc_confirm_screen")
+                        ),
+                        no_action=Hide("ahc_confirm_screen")
+                    )
+
+init -999:
+    default persistent._ahc_sprite_settings = dict()
+
+# Apply our settings
+init 900 python:
+    for sp_type, settings_dict in persistent._ahc_sprite_settings.iteritems():
+        for sp_name, ex_props in settings_dict.iteritems():
+            spr_obj = store.mas_sprites.get_sprite(sp_type, sp_name)
+            if spr_obj is not None:
+                spr_obj.ex_props.update(ex_props)
+
 
 init python:
     #init these vars here to prevent crashes if we update from pre-submod framework version
@@ -58,9 +284,42 @@ init python:
 init -1 python in mas_globals:
     ahc_run_after_date = bool(store.persistent._mas_moni_chksum)
 
+init -999 python in ahc_utils:
+    @renpy.pure
+    class PopDict(renpy.store.Action, renpy.store.FieldEquality):
+        """
+        An action that pops a key from a dict.
+        """
+        identity_fields = ["dict", "key"]
+
+        def __init__(self, dict, key):
+            self.dict = dict
+            self.key = key
+
+        def __call__(self):
+            if self.key in self.dict:
+                self.dict.pop(self.key)
+
+            renpy.restart_interaction()
+
+        def get_selected(self):
+            if self.key not in self.dict:
+                return True
+
+            return False
+
+init 2 python in ahc_utils:
+    # Finally update this dict
+    ALL_EX_PROPS.update(ACS_EX_PROPS)
+    ALL_EX_PROPS.update(HAIR_EX_PROPS)
+    ALL_EX_PROPS.update(CLOTHES_EX_PROPS)
+
 init python in ahc_utils:
     import random
     import datetime
+    import json
+    from store import persistent
+    from copy import deepcopy# This is used in our screens
 
     #Reset force hair and outfit, so we can have Moni set her own next sesh
     store.persistent._mas_force_hair = False
@@ -143,6 +402,23 @@ init python in ahc_utils:
         "dark": __BUILTIN_DARK_BRACELET_ACS
     }
 
+    ACS_EX_PROPS = {"light": True, "dark": True}
+    HAIR_EX_PROPS = {"day": True, "night": True, "down": True}
+    CLOTHES_EX_PROPS = {
+        "home": True,
+        "date": True,
+        "formal": True,
+        "sweater": True,
+        "jacket": True,
+        "pajamas": True,
+        "light bracelet": True,
+        "dark bracelet": True,
+        "no bracelet": True
+    }
+    # NOTE: this will be filled at init 2
+    # to allow people override/add custom ex props at init 1
+    ALL_EX_PROPS = dict()
+
     def add_builtin_to_list(obj, ex_prop):
         """
         Adds a builtin to a builtin list
@@ -178,38 +454,210 @@ init python in ahc_utils:
 
         EXPROPS_MAP[ex_prop].remove(obj)
 
+    def __save_sprites_changes(og_spr_data, new_spr_data):
+        """
+        This method is being used in our screens. It checks which data was changed and updates/saves corresponding things.
+        The data here is a list of dicts with various objects that hold different information about sprite objects (acs, hair, clothes).
+
+        IN:
+            og_spr_data - sprite data before the changes
+            new_spr_data - sprite data after the changes
+        """
+        for old_data_dict, new_data_dict in zip(og_spr_data, new_spr_data):
+            # Founds difference?
+            if old_data_dict != new_data_dict:
+                # If this sprite object is a sprite pack, then we update its json
+                if new_data_dict["json_fp"] is not None:
+                    _updateJson(new_data_dict["json_fp"], ex_props=new_data_dict["current_ex_props"], replace=True)
+
+                # Otherwise we're editing a built-in sprite and need to save it in persistent
+                else:
+                    _sp_type = new_data_dict["spr_obj"].gettype()
+                    _sp_name = new_data_dict["spr_obj"].name
+
+                    if _sp_type not in persistent._ahc_sprite_settings:
+                        persistent._ahc_sprite_settings[_sp_type] = dict()
+
+                    # If we got an empty dict, then we want to remove it from the settings
+                    if not new_data_dict["current_ex_props"]:
+                        if _sp_name in persistent._ahc_sprite_settings[_sp_type]:
+                            persistent._ahc_sprite_settings[_sp_type].pop(_sp_name)
+
+                            if not persistent._ahc_sprite_settings[_sp_type]:
+                                persistent._ahc_sprite_settings.pop(_sp_type)
+
+                    else:
+                        persistent._ahc_sprite_settings[_sp_type][_sp_name] = new_data_dict["current_ex_props"]
+
+                    # Update it for runtime
+                    spr_obj = store.mas_sprites.get_sprite(_sp_type, _sp_name)
+                    if spr_obj is not None:
+                        # We need to completely override, so pop the existing ex props
+                        for key in spr_obj.ex_props.copy():
+                            if key in ALL_EX_PROPS:
+                                spr_obj.ex_props.pop(key)
+
+                        spr_obj.ex_props.update(new_data_dict["current_ex_props"])
+
+    def __get_sprites_data():
+        """
+        Returns all sprite objects, their name, jsons fp (if appopriate), and current custom ex_props
+
+        OUT:
+            dict of lists with the data where keys are spritepacks types (0-2 as of current)
+            e.g.:
+                {
+                    0: [
+                        {"disp_name": value, "spr_obj": value, "json_fp": value, "current_ex_props": value},
+                        ...
+                    ],
+                    ...
+                }
+        """
+        def add_to_rv(spr_obj, json_fp=None):
+            """
+            Inner method to help dealing with booplicated code
+
+            IN:
+                spr_obj - sprite object
+                json_fp - path to the sprite object's json
+            """
+            # Get ex_props
+            current_ex_props = {key: value for key, value in spr_obj.ex_props.iteritems() if key in ALL_EX_PROPS}
+            # Get the selectable for name
+            spr_obj_sel = store.mas_selspr.get_sel(spr_obj)
+            if spr_obj_sel is not None:
+                # Wait, but this is locked! Skip it
+                if not spr_obj_sel.unlocked:
+                    return
+                disp_name = spr_obj_sel.display_name
+
+            # If this spr object doesn't have a selectable, then we use its name in the code
+            else:
+                disp_name = spr_obj.name.replace("_", " ").capitalize()
+
+            # Add this obj to rv
+            rv_list = rv.get(spr_obj.gettype(), None)
+            if rv_list is not None:
+                rv_list.append(
+                    {
+                        "disp_name": disp_name,
+                        "spr_obj": spr_obj,
+                        "json_fp": json_fp,
+                        "current_ex_props": current_ex_props
+                    }
+                )
+
+        rv = {
+            store.mas_sprites_json.SP_ACS: list(),
+            store.mas_sprites_json.SP_HAIR: list(),
+            store.mas_sprites_json.SP_CLOTHES: list()
+        }
+
+        all_acs = store.mas_sprites.ACS_MAP.values()
+        all_hair = store.mas_sprites.HAIR_MAP.values()
+        all_hair = filter(lambda item: item.name != "custom", all_hair)# You don't need to adjust the "custom" hair
+        all_clothes = store.mas_sprites.CLOTH_MAP.values()
+        all_spr_objs = {
+            store.mas_sprites_json.SP_ACS: all_acs,
+            store.mas_sprites_json.SP_HAIR: all_hair,
+            store.mas_sprites_json.SP_CLOTHES: all_clothes
+        }
+        # MAIN_FP = store.mas_sprites_json.sprite_station.station.replace("\\", "/")
+        GAMEDIR_FP = renpy.config.gamedir.replace("\\", "/")
+        JSONDIR_FP = "/mod_assets/monika/j/"
+        all_json_fps = [JSONDIR_FP + json_fp for json_fp in store.mas_sprites_json.sprite_station.getPackageList(".json")]
+
+        # First deal with custom sprites
+        for json_fp in all_json_fps:
+            if renpy.loadable(json_fp):
+                with open(GAMEDIR_FP + json_fp) as jfile:
+                    json_data = json.load(jfile)
+                    if "type" in json_data and "name" in json_data:
+                        spr_obj = store.mas_sprites.get_sprite(json_data["type"], json_data["name"])
+
+                        if spr_obj is not None:
+                            add_to_rv(spr_obj, json_fp)
+
+                            # Don't forget to remove it from the list since we've already dealt with it
+                            spr_obj_list = all_spr_objs.get(spr_obj.gettype(), None)
+                            if spr_obj_list is not None:
+                                spr_obj_list.remove(spr_obj)
+
+        # Now deal with built-in sprites
+        for spr_obj in (all_acs + all_hair + all_clothes):
+            # These shouldn't be custom
+            if not spr_obj.is_custom:
+                add_to_rv(spr_obj)
+
+        # Sort all by name
+        for key in rv:
+            rv[key].sort(key=lambda item: item["disp_name"])
+
+        return rv
+
+    def _updateJson(json_fp, ex_props={}, replace=False):
+        """
+        Updates a json, modifying its ex_props
+
+        IN:
+            json_fp - relative filepath to the json file
+            ex_props - new ex_props
+                (Default: empty dict)
+            replace - if True, we'll remove all the existing custom ex_props and then add the new ones,
+                otherwise we'll just update them
+                (Default: False)
+        """
+        GAMEDIR = renpy.config.gamedir.replace("\\", "/")
+
+        if renpy.loadable(json_fp):
+            with open(GAMEDIR + json_fp) as jfile:
+                json_data = json.load(jfile)
+
+                #If there is no expsting ex_props field, we shoud create it
+                if "ex_props" not in json_data:
+                    json_data["ex_props"] = dict()
+
+                # Replacing? Filter so we remove only submodded ex_props
+                elif replace:
+                    json_data["ex_props"] = {key: value for key, value in json_data["ex_props"].iteritems() if key not in ALL_EX_PROPS}
+
+                # Update with the new ex_props
+                json_data["ex_props"].update(ex_props)
+
+                if not json_data["ex_props"]:
+                    json_data.pop("ex_props")
+
+                #Now we want to update the runtime variant
+                spr_obj = store.mas_sprites.get_sprite(json_data["type"], json_data["name"])
+                if spr_obj:
+                    # See if we want to remove the existing ex props
+                    if replace:
+                        for key in spr_obj.ex_props.copy():
+                            if key in ALL_EX_PROPS:
+                                spr_obj.ex_props.pop(key)
+
+                    spr_obj.ex_props.update(ex_props)
+
+                #Now write the new json
+                with open(GAMEDIR + json_fp, "w") as jfile:
+                    json.dump(json_data, jfile, indent=4, sort_keys=True)
+
     def __updateJsons():
         """
         Updates the jsons to add ex_props for this submod
         Additionally, will update sprites for runtime as well
         """
-        import json
-
-        JSON_PATH = "mod_assets/monika/j/"
+        JSON_PATH = "/mod_assets/monika/j/"
 
         for json_filename, added_ex_props in json_update_map.iteritems():
-            if renpy.loadable(JSON_PATH + json_filename):
-                with open("{0}/{1}{2}".format(renpy.config.gamedir, JSON_PATH, json_filename)) as jfile:
-                    json_data = json.load(jfile)
+            _updateJson(
+                JSON_PATH + json_filename,
+                ex_props=added_ex_props,
+                replace=True
+            )
 
-                    #If there is no expsting ex_props field, we shoud create it
-                    if "ex_props" not in json_data:
-                        json_data["ex_props"] = dict()
-
-                    #Now add the new data
-                    json_data["ex_props"].update(added_ex_props)
-
-                    #Now we want to update the runtime variant
-                    hair_sprobj = store.mas_sprites.get_sprite(1, json_data["name"])
-                    if hair_sprobj:
-                        hair_sprobj.ex_props.update(added_ex_props)
-
-                with open("{0}/{1}{2}".format(renpy.config.gamedir, JSON_PATH, json_filename), "w") as jfile:
-                    #Now write the new json
-                    json.dump(json_data, jfile, indent=4, sort_keys=True)
-
-
-    def __compatibleOnly(hair_list):
+    def _compatibleOnly(hair_list):
         """
         Filters the given list to only return the MASHair objects which are compatible with the current clothes
 
@@ -238,7 +686,7 @@ init python in ahc_utils:
         """
         global __BUILTIN_DAY_HAIR
 
-        return __compatibleOnly([
+        return _compatibleOnly([
             hair.get_sprobj()
             for hair in store.mas_selspr.filter_hair(True)
             if "day" in hair.get_sprobj().ex_props
@@ -254,7 +702,7 @@ init python in ahc_utils:
         """
         global __BUILTIN_NIGHT_HAIR
 
-        return __compatibleOnly([
+        return _compatibleOnly([
             hair.get_sprobj()
             for hair in store.mas_selspr.filter_hair(True)
             if "night" in hair.get_sprobj().ex_props
@@ -1302,7 +1750,7 @@ init 50 python:
             "and (store.ahc_utils.shouldChangeHair('day') "
             "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
         )
-        hairup_ev.action = EV_ACT_PUSH
+        hairup_ev.action = EV_ACT_QUEUE
 
     def ahc_recond_down():
         """
@@ -1317,7 +1765,7 @@ init 50 python:
             "and (store.ahc_utils.shouldChangeHair('night') "
             "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
         )
-        hairdown_ev.action = EV_ACT_PUSH
+        hairdown_ev.action = EV_ACT_QUEUE
 
     #Only ahc hair down event and the equivalent startup trigger event should be able to call this
     def ahc_recond_pjs():
@@ -1352,7 +1800,7 @@ init 50 python:
                 datetime.time(hour=_sunrise_hour - 1)
             )
 
-            pjs_ev.action=EV_ACT_PUSH
+            pjs_ev.action=EV_ACT_QUEUE
 
     ahc_recond_ponytail()
     ahc_recond_down()
@@ -1369,7 +1817,7 @@ init 5 python:
                 "and (store.ahc_utils.shouldChangeHair('day') "
                 "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
             ),
-            action=EV_ACT_PUSH,
+            action=EV_ACT_QUEUE,
             show_in_idle=True,
             rules={"skip alert": None}
         ),
@@ -1493,7 +1941,7 @@ init 5 python:
                 "and (store.ahc_utils.shouldChangeHair('night') "
                 "or store.ahc_utils.shouldChangeClothes(store.ahc_utils.getClothesExpropForTemperature())) "
             ),
-            action=EV_ACT_PUSH,
+            action=EV_ACT_QUEUE,
             show_in_idle=True,
             rules={"skip alert": None}
         ),
@@ -1637,7 +2085,7 @@ init 5 python:
         Event(
             persistent.event_database,
             eventlabel="monika_setoutfit_pjs",
-            action=EV_ACT_PUSH,
+            action=EV_ACT_QUEUE,
             show_in_idle=True,
             rules={"skip alert": None}
         ),
