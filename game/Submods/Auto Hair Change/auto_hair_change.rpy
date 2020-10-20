@@ -253,7 +253,7 @@ screen ahc_sprites_settings(all_spr_ex_props, spr_data):
                     selected False
                     action Show(
                         "ahc_confirm_screen",
-                        prompt="This'll open a new tab in your browser.",
+                        prompt="This will open a new tab in your browser.",
                         yes_action=(
                             OpenURL("https://github.com/multimokia/MAS-Submod-Auto-Outfit-Change/blob/master/game/Submods/Auto%20Hair%20Change/ex_prop_explanation.md"),
                             Hide("ahc_confirm_screen")
@@ -555,6 +555,7 @@ init python in ahc_utils:
         }
 
         all_acs = store.mas_sprites.ACS_MAP.values()
+        all_acs = filter(lambda item: item.mux_type and "wrist-bracelet" in item.mux_type, all_acs)# We care only about bracelets
         all_hair = store.mas_sprites.HAIR_MAP.values()
         all_hair = filter(lambda item: item.name != "custom", all_hair)# You don't need to adjust the "custom" hair
         all_clothes = store.mas_sprites.CLOTH_MAP.values()
