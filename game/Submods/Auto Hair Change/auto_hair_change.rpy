@@ -529,6 +529,9 @@ init python in ahc_utils:
             if spr_obj_sel is not None:
                 # Wait, but this is locked! Skip it
                 if not spr_obj_sel.unlocked:
+                    store.mas_utils.writelog(
+                        "[AOC ERROR]: '{0}' is locked, ignoring.\n".format(spr_obj.name)
+                    )
                     return
                 disp_name = spr_obj_sel.display_name
 
@@ -546,6 +549,11 @@ init python in ahc_utils:
                         "json_fp": json_fp,
                         "current_ex_props": current_ex_props
                     }
+                )
+
+            else:
+                store.mas_utils.writelog(
+                    "[AOC ERROR]: '{0}' has the invalid type '{1}'.\n".format(spr_obj.name, spr_obj.gettype())
                 )
 
         rv = {
@@ -585,11 +593,39 @@ init python in ahc_utils:
                             if spr_obj_list is not None:
                                 spr_obj_list.remove(spr_obj)
 
+                            else:
+                                store.mas_utils.writelog(
+                                    "[AOC ERROR]: '{0}' has the invalid type '{1}'.\n".format(spr_obj.name, spr_obj.gettype())
+                                )
+
+                        else:
+                            store.mas_utils.writelog(
+                                "[AOC ERROR]: Couldn't get a sprite object of the '{0}' type with the '{1}' name.\n".format(
+                                    json_data["type"],
+                                    json_data["name"]
+                                )
+                            )
+
+                    else:
+                        store.mas_utils.writelog(
+                            "[AOC ERROR]: '{0}' is missing the 'type' and/or 'name' fields.\n".format(json_fp)
+                        )
+
+            else:
+                store.mas_utils.writelog(
+                    "[AOC ERROR]: '{0}' isn't loadable.\n".format(json_fp)
+                )
+
         # Now deal with built-in sprites
         for spr_obj in (all_acs + all_hair + all_clothes):
             # These shouldn't be custom
             if not spr_obj.is_custom:
                 add_to_rv(spr_obj)
+
+            else:
+                store.mas_utils.writelog(
+                    "[AOC ERROR]: '{0}' is a custom sprite, but it wasn't removed with other json sprites.\n".format(spr_obj.name)
+                )
 
         # Sort all by name
         for key in rv:
