@@ -701,11 +701,12 @@ init 990 python in ahc_utils:
         #Make hair is either what player asked, or Moni's choice
         #NOTE: _mas_setting_ocb is not a consistent way to check for outfit mode as
         #change_clothes doesn't set this to True
+        #TODO: Find a way to check if the current hairstyle/acs are part of the outfit
         if (
             not store.persistent._mas_force_hair
             and not (
                 store.monika_chr.is_wearing_clothes_with_exprop("costume")
-                and store.persistent._mas_setting_ocb
+                and store.ahc_utils.isWearingClothesOfExpropValue("o31")
             )
             and not isWearingDayHair()
         ):
