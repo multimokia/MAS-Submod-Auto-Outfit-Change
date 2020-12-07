@@ -1338,7 +1338,7 @@ init 50 python:
 
             # If the sunset is after the thresh, start_date will be an hour after the sunset hour
             if _sunset_hour >= _pj_thresh:
-                _time = _sunset_hour + 1
+                _time = _sunset_hour + 1 if _sunset_hour < 23 else _sunset_hour
             # Else, if the sunset is us to an hour before the thresh, start_date will be an hour after the thresh
             elif _pj_thresh - _sunset_hour <= 1:
                 _time = _pj_thresh + 1
@@ -1350,7 +1350,7 @@ init 50 python:
 
             pjs_ev.end_date = datetime.datetime.combine(
                 pjs_ev.start_date.date() + datetime.timedelta(days=1),
-                datetime.time(hour=_sunrise_hour - 1)
+                datetime.time(hour=_sunrise_hour - 1 if _sunrise_hour > 0 else _sunrise_hour)
             )
 
             pjs_ev.action=EV_ACT_PUSH
