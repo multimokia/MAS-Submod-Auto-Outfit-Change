@@ -621,7 +621,7 @@ init 1 python in ahc_utils:
 
             if _bracelet_list:
                 # If Monika already wears a bracelet there's a chance to change it
-                if _current_bracelet and _random_chance and "_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type):
+                if _current_bracelet and _random_chance and eval("_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type)):
 
                     # Check if the current bracelet is in the list in case we ever have a bracelet that's part of an outfit
                     # and that is not unlocked
