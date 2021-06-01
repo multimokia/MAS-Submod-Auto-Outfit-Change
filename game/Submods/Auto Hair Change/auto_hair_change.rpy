@@ -561,6 +561,9 @@ init 1 python in ahc_utils:
 
         global __BUILTIN_LIGHT_BRACELET_ACS, __BUILTIN_DARK_BRACELET_ACS
 
+        # Add these in the global namespace so that eval can use them
+        global _is_wearing_light_bracelet, _is_wearing_dark_bracelet
+
         # Get our current bracelet
         _current_bracelet = store.monika_chr.get_acs_of_type("wrist-bracelet")
 
@@ -621,17 +624,21 @@ init 1 python in ahc_utils:
 
             if _bracelet_list:
                 # If Monika already wears a bracelet there's a chance to change it
-                if _current_bracelet and _random_chance and eval("_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type)):
+                if _current_bracelet and eval("_is_wearing_{0}_bracelet".format(_should_wear_bracelet_of_type)):
 
-                    # Check if the current bracelet is in the list in case we ever have a bracelet that's part of an outfit
-                    # and that is not unlocked
-                    if _current_bracelet in _bracelet_list and len(_bracelet_list) >= 2:
-                        _bracelet_list.remove(_current_bracelet)
-                    store.mas_sprites._acs_wear_if_found(store.monika_chr, renpy.random.choice(_bracelet_list).name)
+                    # We check the chance here so that we don't go in the else block if this is False
+                    if _random_chance:
+                        # Check if the current bracelet is in the list in case we ever have a bracelet that's part of an outfit
+                        # and that is not unlocked
+                        if _current_bracelet in _bracelet_list and len(_bracelet_list) >= 2:
+                            _bracelet_list.remove(_current_bracelet)
+                        store.mas_sprites._acs_wear_if_found(store.monika_chr, renpy.random.choice(_bracelet_list).name)
 
                 # Otherwise choose a bracelet if we have one unlocked
                 else:
                     store.mas_sprites._acs_wear_if_found(store.monika_chr, getRandACSOfExprop(_should_wear_bracelet_of_type).name)
+
+        del _is_wearing_light_bracelet, _is_wearing_dark_bracelet
 
         return
 
