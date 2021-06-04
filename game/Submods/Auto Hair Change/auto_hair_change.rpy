@@ -1689,4 +1689,15 @@ label monika_setoutfit_pjs:
     else:
         m 1eua "That feels much better."
 
+    # If we took her out during the day and returned late in the night, there's a chance
+    # that monika_setoutfit_pjs will run before monika_sethair_down.
+    # This ensures that she won't change twice by removing monika_sethair_down from the event list.
+
+    $ _hairdown_ev = store.mas_getEV("monika_sethair_down")
+
+    if store.mas_inEVL("monika_sethair_down") and _hairdown_ev:
+        $ _hairdown_ev.last_seen = datetime.datetime.now()
+        $ store.mas_rmEVL("monika_sethair_down")
+        $ store.ahc_recond_down()
+
     return
