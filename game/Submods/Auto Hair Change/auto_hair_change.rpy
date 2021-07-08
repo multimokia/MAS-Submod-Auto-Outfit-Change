@@ -739,7 +739,14 @@ init 990 python in ahc_utils:
                 store.monika_chr.wear_acs(store.mas_acs_ribbon_def)
 
         #Moni changes her clothes depending on certain conditions or wears what the player asked
-        if not store.persistent._mas_force_clothes or isWearingClothesOfExprop("lingerie"):
+        if (
+            not store.persistent._mas_force_clothes
+            or isWearingClothesOfExprop("lingerie")
+            or (
+                isWearingClothesOfExprop("pajamas")
+                and not isWearingClothesOfExprop(getClothesExpropForTemperature(indoor=False))
+            )
+        ):
             if store.mas_isSpecialDay():
                 if store.mas_isF14() and store.mas_isDayNow():
                     changeClothesOfExprop("date")
