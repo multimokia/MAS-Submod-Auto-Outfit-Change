@@ -2,9 +2,9 @@ init -990 python in mas_submod_utils:
     ahc_submod = Submod(
         author="multimokia and Legendkiller21",
         name="Auto Outfit Change",
-        #coauthors=["Legendkiller21"]
+        coauthors=["Legendkiller21"]
         description="A submod which allows Monika to pick her own hairstyles for day and night.",
-        version="3.0.2",
+        version="3.0.3",
         version_updates={},
         settings_pane="auto_hair_change_settings_screen"
     )
