@@ -842,11 +842,19 @@ init 990 python in ahc_utils:
                     _ahc_label_ev.last_seen = _now
 
                     store.mas_rmEVL(_ahc_label)
+                    # recond the label in case the conditions were stripped
+                    store.ahc_recond_ahc_label(_ahc_label)
 
-                    # The triggered label was monika_sethair_down and we have unlocked pjs
-                    if _ahc_label == "monika_sethair_down" and hasUnlockedClothesOfExprop("pajamas"):
-                        # Recondition the pjs topic
-                        store.ahc_recond_pjs()
+                    # The triggered label was monika_sethair_down
+                    if _ahc_label == "monika_sethair_down":
+
+                        # Update out persist var
+                        store.setHairDownSuntimeStates()
+
+                        # And check if we have unlocked pjs
+                        if hasUnlockedClothesOfExprop("pajamas"):
+                            # Recondition the pjs topic
+                            store.ahc_recond_pjs()
 
             _ahc_pj_ev = store.mas_getEV("monika_setoutfit_pjs")
 
@@ -1300,7 +1308,42 @@ init -2 python in mas_sprites:
         if outfit_to_wear is not None and store.mas_SELisUnlocked(outfit_to_wear):
             _moni_chr.change_clothes(outfit_to_wear, by_user=by_user, outfit_mode=outfit_mode)
 
+init -19 python in ahc_utils:
+    import store
+    import datetime
+    import time
+
+    def MASToDtTime(mas_time):
+        """
+        Converts a MAS time (settings menu) to datetime.datetime
+
+        IN:
+            mas_time - MAS settings time to convert to dt time
+
+        OUT:
+            the time in dt time.
+        """
+        return datetime.datetime.combine(datetime.date.today(), datetime.time(hour=mas_time/60, minute=mas_time%60))
+
+default persistent.hair_down_suntime_states = []
+
 init 50 python:
+    def setHairDownSuntimeStates():
+        # Save the following values that we will need for hasHairDownRun
+        #   If currently it is between sunset and midnight
+        #   If currently it is between midnight and sunrise
+        #   Today's sunrise dt, converted from MAS time
+        #   Today's sunset dt, converted from MAS time
+
+        _now = datetime.datetime.now()
+
+        persistent.hair_down_suntime_states = [
+            store.mas_isSStoMN(_now),
+            store.mas_isMNtoSR(_now),
+            store.ahc_utils.MASToDtTime(store.persistent._mas_sunrise),
+            store.ahc_utils.MASToDtTime(store.persistent._mas_sunset)
+        ]
+
     #Reset the ahc evs here as well in case they somehow lost their conditionals/actions
 
     def ahc_recond_ponytail():
@@ -1370,6 +1413,17 @@ init 50 python:
 
     ahc_recond_ponytail()
     ahc_recond_down()
+
+init 51 python:
+    def ahc_recond_ahc_label(label_name):
+        label_map = {
+            "monika_sethair_ponytail": "store.ahc_recond_ponytail()",
+            "monika_sethair_down": "store.ahc_recond_down()",
+            "monika_setoutfit_pjs": "store.ahc_recond_pjs()",
+        }
+
+        if label_name in label_map:
+            eval(label_map[label_name])
 
 init 5 python:
     addEvent(
@@ -1519,6 +1573,9 @@ label monika_sethair_down:
 
     #Need to recondition/action this
     $ ahc_recond_down()
+
+    # Update out persist var
+    $ store.setHairDownSuntimeStates()
 
     if store.ahc_utils.should_AHC_label_return():
         #Reset our global var if we return
@@ -1699,11 +1756,16 @@ label monika_setoutfit_pjs:
     # that monika_setoutfit_pjs will run before monika_sethair_down.
     # This ensures that she won't change twice by removing monika_sethair_down from the event list.
 
-    $ _hairdown_ev = store.mas_getEV("monika_sethair_down")
-
-    if store.mas_inEVL("monika_sethair_down") and _hairdown_ev:
-        $ _hairdown_ev.last_seen = datetime.datetime.now()
-        $ store.mas_rmEVL("monika_sethair_down")
-        $ store.ahc_recond_down()
+    python:
+        if (
+            store.mas_inEVL("monika_sethair_down")
+            or not store.ahc_utils.hasHairPonytailRun()
+        ):
+            mas_setEVLPropValues("monika_sethair_down", last_seen=datetime.datetime.now())
+            store.mas_rmEVL("monika_sethair_down")
+            store.ahc_recond_down()
+            store.setHairDownSuntimeStates()
+            if store.mas_globals.ahc_run_after_date:
+                store.mas_globals.ahc_run_after_date = False
 
     return
